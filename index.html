@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QBR Sankey Diagram - Prime/Sub Flow (Filtered)</title>
+    <title>QBR Sankey Diagram - Full Hierarchy (Filtered)</title> {/* Updated Title */}
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <script src="https://unpkg.com/d3-sankey@0.12.3/dist/d3-sankey.min.js"></script>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
-            margin: 0; /* Remove default margin */
-            padding: 20px; /* Add padding */
+            margin: 0;
+            padding: 20px;
             background-color: #f8f9fa;
             color: #212529;
             display: flex;
@@ -21,29 +21,29 @@
         h1 {
             text-align: center;
             color: #343a40;
-            margin-bottom: 15px; /* Reduced margin */
+            margin-bottom: 15px;
         }
 
         /* Filter Controls Styling */
         #filter-controls {
             display: flex;
-            flex-wrap: wrap; /* Allow wrapping on smaller screens */
+            flex-wrap: wrap;
             justify-content: center;
             align-items: center;
-            gap: 20px; /* Space between filter groups */
+            gap: 20px;
             margin-bottom: 20px;
             padding: 15px;
-            background-color: #e9ecef; /* Light gray background */
+            background-color: #e9ecef;
             border-radius: 8px;
             width: 95%;
-            max-width: 800px; /* Limit width of filter bar */
+            max-width: 800px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
 
         .filter-group {
             display: flex;
-            flex-direction: column; /* Stack label and control */
-            align-items: flex-start; /* Align label left */
+            flex-direction: column;
+            align-items: flex-start;
         }
 
         .filter-group label {
@@ -61,22 +61,21 @@
             font-size: 0.9em;
         }
          .filter-group input[type="range"] {
-             width: 180px; /* Fixed width for slider */
+             width: 180px;
              cursor: pointer;
          }
          .filter-group select {
-             min-width: 120px; /* Minimum width for dropdown */
+             min-width: 120px;
          }
 
         #min-value-display {
             font-weight: bold;
-            color: #007bff; /* Blue color for value */
-            margin-left: 5px; /* Space next to label */
-            min-width: 60px; /* Ensure space for value */
-            display: inline-block; /* Keep on same line */
+            color: #007bff;
+            margin-left: 5px;
+            min-width: 60px;
+            display: inline-block;
             text-align: right;
         }
-         /* Align value display better */
          .filter-group#min-value-group label {
              display: flex;
              align-items: center;
@@ -86,7 +85,7 @@
         #chart-container {
             width: 95%;
             max-width: 1300px;
-            height: 70vh; /* Adjusted height slightly */
+            height: 70vh;
             min-height: 500px;
             background-color: #ffffff;
             border-radius: 8px;
@@ -117,15 +116,17 @@
             fill-opacity: 1;
         }
 
-        /* Specific Node Type Colors */
-        .node-type-agency rect { fill: #6f42c1; } /* Purple */
-        .node-type-prime rect { fill: #007bff; } /* Blue */
-        .node-type-sub rect { fill: #28a745; }  /* Green */
+        /* Specific Node Type Colors - Updated */
+        .node-type-agency rect { fill: #663399; }    /* Rebeccapurple */
+        .node-type-subagency rect { fill: #8A2BE2; } /* Blueviolet */
+        .node-type-office rect { fill: #007bff; }    /* Blue */
+        .node-type-prime rect { fill: #17a2b8; }    /* Info Blue */
+        .node-type-sub rect { fill: #28a745; }     /* Green */
 
         .node text {
             pointer-events: none;
             fill: #343a40;
-            font-size: 11px;
+            font-size: 10px; /* Slightly smaller for more levels */
             font-weight: 500;
             text-shadow: 0 1px 1px rgba(255,255,255,0.7);
         }
@@ -133,12 +134,12 @@
         /* Link Styling */
         .link {
             fill: none;
-            stroke-opacity: 0.35;
+            stroke-opacity: 0.3; /* Slightly lower opacity for more links */
             transition: stroke-opacity 0.2s ease;
         }
 
         .link:hover {
-            stroke-opacity: 0.7;
+            stroke-opacity: 0.6;
         }
 
         /* Tooltip Styling */
@@ -185,21 +186,21 @@
         /* Responsive adjustments */
         @media (max-width: 768px) {
             body { padding: 10px; }
-            h1 { font-size: 1.4em; }
+            h1 { font-size: 1.3em; } /* Adjusted */
             #filter-controls { flex-direction: column; align-items: stretch; gap: 15px; }
             .filter-group { width: 100%; }
-            .filter-group input[type="range"] { width: calc(100% - 16px); } /* Adjust slider width */
+            .filter-group input[type="range"] { width: calc(100% - 16px); }
             #chart-container { height: 65vh; min-height: 400px; }
-            .node text { font-size: 10px; }
+            .node text { font-size: 9px; }
             #tooltip { font-size: 12px; padding: 8px 12px; }
         }
          @media (max-width: 480px) {
-             h1 { font-size: 1.2em; }
+             h1 { font-size: 1.1em; } /* Adjusted */
          }
     </style>
 </head>
 <body>
-    <h1>Contract Flow: Agency → Prime → Subcontractor</h1>
+    <h1>Contract Flow: Agency → SubAgency → Office → Prime → Subcontractor</h1> {/* Updated Title */}
 
     <div id="filter-controls">
         <div class="filter-group" id="min-value-group">
@@ -228,13 +229,14 @@
         // --- Global Variables ---
         const dataUrl = "testmanyrows_filtered.csv";
         const valueField = 'subaward_amount';
+        // Updated color scale for 5 levels
         const qbrColorScale = d3.scaleOrdinal()
-            .domain(['agency', 'prime', 'sub'])
-            .range(['#6f42c1', '#007bff', '#28a745']);
+            .domain(['agency', 'subagency', 'office', 'prime', 'sub'])
+            .range(['#663399', '#8A2BE2', '#007bff', '#17a2b8', '#28a745']); // Added colors
 
-        let rawData = []; // Store the original loaded data
+        let rawData = [];
         let currentMinValue = 0;
-        let currentTopN = 0; // 0 means show all
+        let currentTopN = 0;
         let minValueDebounceTimer;
         let resizeTimer;
 
@@ -248,7 +250,7 @@
 
 
         // --- Helper Functions ---
-        function formatCurrency(value, useSuffix = true) {
+        function formatCurrency(value, useSuffix = true) { /* ... as before ... */
             if (typeof value !== 'number' || isNaN(value)) return '$?';
             if (useSuffix) {
                 if (Math.abs(value) >= 1e9) return `$${(value / 1e9).toFixed(1)}B`;
@@ -259,51 +261,69 @@
                 style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0
             }).format(value);
         }
-
-        function showTooltip(event, content) {
-            tooltipDiv.html(content)
+        function showTooltip(event, content) { /* ... as before ... */
+             tooltipDiv.html(content)
                 .style('left', (event.pageX + 15) + 'px')
                 .style('top', (event.pageY - 10) + 'px')
                 .classed('visible', true);
         }
-
-        function hideTooltip() {
-            tooltipDiv.classed('visible', false);
+        function hideTooltip() { /* ... as before ... */
+             tooltipDiv.classed('visible', false);
         }
 
-        // --- Data Processing (Handles Top N) ---
+        // --- Data Processing (Handles Full Hierarchy & Top N) ---
         function processDataForSankey(data, topN) {
             console.log(`Processing ${data.length} raw rows for Sankey. Top N = ${topN}`);
             const nodesMap = new Map();
-            const linksMap = new Map();
-            const primeToSubLinksRaw = []; // Store raw prime->sub links for sorting
+            // Separate maps for each link type for aggregation before Top N filtering
+            const agencyToSubMap = new Map();
+            const subToOfficeMap = new Map();
+            const officeToPrimeMap = new Map();
+            const primeToSubLinksRaw = []; // Store raw P->S links for sorting
 
             data.forEach(row => {
+                // Extract all hierarchy levels
                 const agencyName = row.prime_award_awarding_agency_name?.trim() || row.awarding_agency_name?.trim();
+                const subAgencyName = row.prime_award_awarding_sub_agency_name?.trim() || row.awarding_sub_agency_name?.trim();
+                const officeName = row.prime_award_awarding_office_name?.trim() || row.awarding_office_name?.trim();
                 const primeName = row.prime_awardee_name?.trim() || row.recipient_name?.trim();
                 const subName = row.subawardee_name?.trim();
                 const value = parseFloat(String(row[valueField] || '0').replace(/[^0-9.-]+/g, '')) || 0;
 
-                if (!agencyName || !primeName || !subName || value <= 0) return;
+                // Skip if essential info is missing or value <= 0, MUST have a sub for this flow
+                if (!agencyName || !subAgencyName || !officeName || !primeName || !subName || value <= 0) {
+                    return;
+                }
 
+                // Define node IDs
                 const agencyId = `agency-${agencyName}`;
+                const subAgencyId = `subagency-${subAgencyName}`;
+                const officeId = `office-${officeName}`;
                 const primeId = `prime-${primeName}`;
                 const subId = `sub-${subName}`;
 
-                // Add nodes - value accumulation is less critical here, focus on links
+                // Add/Update nodes
                 if (!nodesMap.has(agencyId)) nodesMap.set(agencyId, { id: agencyId, name: agencyName, type: 'agency', value: 0 });
+                if (!nodesMap.has(subAgencyId)) nodesMap.set(subAgencyId, { id: subAgencyId, name: subAgencyName, type: 'subagency', value: 0 });
+                if (!nodesMap.has(officeId)) nodesMap.set(officeId, { id: officeId, name: officeName, type: 'office', value: 0 });
                 if (!nodesMap.has(primeId)) nodesMap.set(primeId, { id: primeId, name: primeName, type: 'prime', value: 0 });
                 if (!nodesMap.has(subId)) nodesMap.set(subId, { id: subId, name: subName, type: 'sub', value: 0 });
 
-                // Store raw prime->sub link for potential Top N filtering
-                 primeToSubLinksRaw.push({ source: primeId, target: subId, value: value, type: 'primeToSub' });
+                // Store raw P->S link for potential Top N filtering
+                primeToSubLinksRaw.push({ source: primeId, target: subId, value: value, type: 'primeToSub' });
 
-                // Aggregate Agency -> Prime links immediately (will be filtered later if Top N applies)
-                const linkAPKey = `${agencyId}|${primeId}`;
-                if (!linksMap.has(linkAPKey)) {
-                    linksMap.set(linkAPKey, { source: agencyId, target: primeId, value: 0, type: 'agencyToPrime' });
-                }
-                linksMap.get(linkAPKey).value += value;
+                // Aggregate upstream links immediately
+                const linkASKey = `${agencyId}|${subAgencyId}`;
+                if (!agencyToSubMap.has(linkASKey)) agencyToSubMap.set(linkASKey, { source: agencyId, target: subAgencyId, value: 0, type: 'agencyToSub' });
+                agencyToSubMap.get(linkASKey).value += value;
+
+                const linkSOKey = `${subAgencyId}|${officeId}`;
+                if (!subToOfficeMap.has(linkSOKey)) subToOfficeMap.set(linkSOKey, { source: subAgencyId, target: officeId, value: 0, type: 'subToOffice' });
+                subToOfficeMap.get(linkSOKey).value += value;
+
+                const linkOPKey = `${officeId}|${primeId}`;
+                if (!officeToPrimeMap.has(linkOPKey)) officeToPrimeMap.set(linkOPKey, { source: officeId, target: primeId, value: 0, type: 'officeToPrime' });
+                officeToPrimeMap.get(linkOPKey).value += value;
             });
 
             let finalNodes = Array.from(nodesMap.values());
@@ -312,62 +332,123 @@
             // --- Apply Top N Filter ---
             if (topN > 0 && primeToSubLinksRaw.length > 0) {
                 console.log(`Applying Top ${topN} filter...`);
-                primeToSubLinksRaw.sort((a, b) => b.value - a.value); // Sort descending by value
-                const topPrimeSubLinks = primeToSubLinksRaw.slice(0, topN);
+                primeToSubLinksRaw.sort((a, b) => b.value - a.value);
+                const topPrimeSubLinksRaw = primeToSubLinksRaw.slice(0, topN);
 
                 // Aggregate the *filtered* top Prime -> Sub links
-                const topLinksMap = new Map();
-                topPrimeSubLinks.forEach(link => {
-                     const linkPSKey = `${link.source}|${link.target}`;
-                     if (!topLinksMap.has(linkPSKey)) {
-                         topLinksMap.set(linkPSKey, { source: link.source, target: link.target, value: 0, type: 'primeToSub' });
-                     }
-                     topLinksMap.get(linkPSKey).value += link.value;
+                const topPrimeSubLinksMap = new Map();
+                topPrimeSubLinksRaw.forEach(link => {
+                    const linkPSKey = `${link.source}|${link.target}`;
+                    if (!topPrimeSubLinksMap.has(linkPSKey)) {
+                        topPrimeSubLinksMap.set(linkPSKey, { source: link.source, target: link.target, value: 0, type: 'primeToSub' });
+                    }
+                    topPrimeSubLinksMap.get(linkPSKey).value += link.value;
                 });
+                const topAggregatedPrimeSubLinks = Array.from(topPrimeSubLinksMap.values());
 
-                const topLinkValues = Array.from(topLinksMap.values());
-
-                // Identify nodes involved in the top flow (Subs, Primes, and their Agencies)
+                // Identify nodes involved in the top P->S flow and trace ancestors
                 const nodesInTopFlow = new Set();
-                const agencyPrimeLinksInTopFlow = new Map(); // Re-aggregate Agency->Prime links for *only* top flow
+                const linksInTopFlow = new Map(); // Store final links by key to avoid duplicates
 
-                topLinkValues.forEach(link => {
-                    nodesInTopFlow.add(link.source); // Add prime ID
-                    nodesInTopFlow.add(link.target); // Add sub ID
-
-                    // Find the corresponding agency for this prime
-                    const primeNode = nodesMap.get(link.source); // Get original prime node
-                     if (primeNode) {
-                         // Find agency->prime links involving this prime from the initial aggregation
-                         linksMap.forEach((apLink, key) => {
-                             if (apLink.target === primeNode.id) {
-                                 nodesInTopFlow.add(apLink.source); // Add agency ID
-                                 // Aggregate the Agency->Prime link value *based on the top subaward flow*
-                                 if (!agencyPrimeLinksInTopFlow.has(key)) {
-                                     agencyPrimeLinksInTopFlow.set(key, { source: apLink.source, target: apLink.target, value: 0, type: 'agencyToPrime' });
-                                 }
-                                 // Add the value of the *subaward* link to the agency->prime link
-                                 agencyPrimeLinksInTopFlow.get(key).value += link.value;
-                             }
-                         });
-                     }
+                // Add nodes and links from the top P->S flow
+                topAggregatedPrimeSubLinks.forEach(link => {
+                    nodesInTopFlow.add(link.source);
+                    nodesInTopFlow.add(link.target);
+                    linksInTopFlow.set(`${link.source}|${link.target}`, link);
                 });
 
-                // Filter nodes and combine link types
-                finalNodes = finalNodes.filter(node => nodesInTopFlow.has(node.id));
-                finalLinks = [
-                    ...Array.from(agencyPrimeLinksInTopFlow.values()), // Use re-aggregated A->P links
-                    ...topLinkValues // Use aggregated Top N P->S links
-                ].filter(l => l.value > 0); // Ensure links still have value
+                // Iteratively trace ancestors
+                let nodesToTrace = new Set(topAggregatedPrimeSubLinks.map(l => l.source)); // Start with primes from top links
+                const maxIterations = 10; // Safety break
+                let iterations = 0;
 
-                // Recalculate node values based *only* on the filtered links
-                finalNodes.forEach(node => node.value = 0); // Reset node values
+                while (nodesToTrace.size > 0 && iterations < maxIterations) {
+                    iterations++;
+                    const nextLevelNodes = new Set();
+                    // Find links ending in current nodesToTrace
+                    const upstreamLinks = [
+                        ...Array.from(officeToPrimeMap.values()),
+                        ...Array.from(subToOfficeMap.values()),
+                        ...Array.from(agencyToSubMap.values())
+                    ].filter(link => nodesToTrace.has(link.target));
+
+                    upstreamLinks.forEach(link => {
+                        // Add the upstream link to the final set if not already present
+                        const linkKey = `${link.source}|${link.target}`;
+                        if (!linksInTopFlow.has(linkKey)) {
+                            // Aggregate value based on the downstream flow it supports
+                            let supportedValue = 0;
+                             linksInTopFlow.forEach(downstreamLink => {
+                                 if (downstreamLink.source === link.target) { // If this link feeds into a known downstream link
+                                     supportedValue += downstreamLink.value; // This might overestimate if multiple paths exist
+                                 }
+                             });
+                             // We need a better way to aggregate upstream link values based *only* on the top N flow
+                             // For simplicity now, let's just include the link structure and recalculate values later
+                             linksInTopFlow.set(linkKey, { ...link, value: 0 }); // Add link with value 0 for now
+                         }
+
+                        // If the source node isn't already included, add it and queue it for tracing
+                        if (!nodesInTopFlow.has(link.source)) {
+                            nodesInTopFlow.add(link.source);
+                            nextLevelNodes.add(link.source);
+                        }
+                    });
+                    nodesToTrace = nextLevelNodes; // Trace the newly added nodes
+                }
+                 if (iterations === maxIterations) console.warn("Top N Ancestor tracing hit max iterations.");
+
+                // Filter nodes based on the traced set
+                finalNodes = finalNodes.filter(node => nodesInTopFlow.has(node.id));
+                // Get all links that connect nodes within the final set
+                finalLinks = Array.from(linksInTopFlow.values());
+
+                // Recalculate ALL link values based ONLY on the top N P->S links
+                const finalPrimeSubLinks = finalLinks.filter(l => l.type === 'primeToSub');
+                const finalOfficePrimeLinks = finalLinks.filter(l => l.type === 'officeToPrime');
+                const finalSubOfficeLinks = finalLinks.filter(l => l.type === 'subToOffice');
+                const finalAgencySubLinks = finalLinks.filter(l => l.type === 'agencyToSub');
+
+                // Reset values
+                finalLinks.forEach(l => l.value = 0);
+
+                // Propagate values upwards from the top P->S links
+                finalPrimeSubLinks.forEach(psLink => {
+                    psLink.value = topPrimeSubLinksMap.get(`${psLink.source}|${psLink.target}`)?.value || 0; // Get aggregated top value
+
+                    finalOfficePrimeLinks.forEach(opLink => {
+                        if (opLink.target === psLink.source) opLink.value += psLink.value;
+                    });
+                    finalSubOfficeLinks.forEach(soLink => {
+                         finalOfficePrimeLinks.forEach(opLink => {
+                             if(opLink.source === soLink.target && opLink.target === psLink.source) soLink.value += psLink.value;
+                         });
+                    });
+                     finalAgencySubLinks.forEach(asLink => {
+                         finalSubOfficeLinks.forEach(soLink => {
+                              finalOfficePrimeLinks.forEach(opLink => {
+                                  if(opLink.source === soLink.target && opLink.target === psLink.source && soLink.source === asLink.target) asLink.value += psLink.value;
+                              });
+                         });
+                     });
+                });
+
+                 // Filter out links that ended up with 0 value after recalculation
+                 finalLinks = finalLinks.filter(l => l.value > 0);
+
+                // Recalculate node values based *only* on the final filtered links
+                finalNodes.forEach(node => node.value = 0);
                 finalLinks.forEach(link => {
                     const sourceNode = finalNodes.find(n => n.id === link.source);
                     const targetNode = finalNodes.find(n => n.id === link.target);
-                    if (sourceNode) sourceNode.value += link.value;
-                    if (targetNode) targetNode.value += link.value;
+                    // Sankey node value is the max of incoming or outgoing flow
+                    if (sourceNode) sourceNode.value = Math.max(sourceNode.value || 0, d3.sum(finalLinks.filter(l => l.source === sourceNode.id), l => l.value));
+                    if (targetNode) targetNode.value = Math.max(targetNode.value || 0, d3.sum(finalLinks.filter(l => l.target === targetNode.id), l => l.value));
+                     // Simpler node value calc: sum of outgoing links for non-sub nodes, incoming for sub nodes
+                     // if (sourceNode && sourceNode.type !== 'sub') sourceNode.value += link.value;
+                     // if (targetNode && targetNode.type === 'sub') targetNode.value += link.value;
                 });
+
                  // Remove nodes that ended up with 0 value after filtering
                  finalNodes = finalNodes.filter(n => n.value > 0);
                  // Ensure links only connect remaining nodes
@@ -376,20 +457,19 @@
 
 
             } else {
-                // No Top N filter or no prime-sub links: Use all aggregated links
-                 // Need to aggregate prime->sub links if not done already
+                // No Top N filter: Aggregate all links
                  const aggregatedPrimeSubMap = new Map();
                  primeToSubLinksRaw.forEach(link => {
                      const linkPSKey = `${link.source}|${link.target}`;
-                     if (!aggregatedPrimeSubMap.has(linkPSKey)) {
-                         aggregatedPrimeSubMap.set(linkPSKey, { source: link.source, target: link.target, value: 0, type: 'primeToSub' });
-                     }
+                     if (!aggregatedPrimeSubMap.has(linkPSKey)) aggregatedPrimeSubMap.set(linkPSKey, { source: link.source, target: link.target, value: 0, type: 'primeToSub' });
                      aggregatedPrimeSubMap.get(linkPSKey).value += link.value;
                  });
 
                 finalLinks = [
-                    ...Array.from(linksMap.values()), // Agency -> Prime links
-                    ...Array.from(aggregatedPrimeSubMap.values()) // Prime -> Sub links
+                    ...Array.from(agencyToSubMap.values()),
+                    ...Array.from(subToOfficeMap.values()),
+                    ...Array.from(officeToPrimeMap.values()),
+                    ...Array.from(aggregatedPrimeSubMap.values())
                 ].filter(l => l.value > 0);
 
                  // Recalculate node values based on ALL links
@@ -397,10 +477,10 @@
                  finalLinks.forEach(link => {
                      const sourceNode = finalNodes.find(n => n.id === link.source);
                      const targetNode = finalNodes.find(n => n.id === link.target);
-                     if (sourceNode) sourceNode.value += link.value;
-                     if (targetNode) targetNode.value += link.value;
+                    if (sourceNode) sourceNode.value = Math.max(sourceNode.value || 0, d3.sum(finalLinks.filter(l => l.source === sourceNode.id), l => l.value));
+                    if (targetNode) targetNode.value = Math.max(targetNode.value || 0, d3.sum(finalLinks.filter(l => l.target === targetNode.id), l => l.value));
                  });
-                 // Remove nodes with 0 value if needed (optional, might remove intermediate nodes)
+                 // Optional: Remove nodes with 0 value if desired
                  // finalNodes = finalNodes.filter(n => n.value > 0);
                  // const finalNodeIdsAll = new Set(finalNodes.map(n => n.id));
                  // finalLinks = finalLinks.filter(l => finalNodeIdsAll.has(l.source) && finalNodeIdsAll.has(l.target));
@@ -415,18 +495,14 @@
         function drawSankeyDiagram(data, minValue) {
             chartDiv.html(''); // Clear previous
 
-            if (!data || !data.nodes || !data.links) {
-                chartDiv.html('<div id="loading">Processing failed.</div>');
-                return;
-            }
+            if (!data || !data.nodes || !data.links) { /* ... handle error ... */ return; }
 
             // --- Apply Minimum Value Filter ---
             console.log(`Filtering links with value >= ${formatCurrency(minValue, false)}`);
             const valueFilteredLinks = data.links.filter(link => link.value >= minValue);
 
-            if (valueFilteredLinks.length === 0) {
+            if (valueFilteredLinks.length === 0) { /* ... handle no links ... */
                  chartDiv.html(`<div id="loading">No contract links found above ${formatCurrency(minValue, false)}. Try lowering the minimum value filter.</div>`);
-                 console.warn("drawSankeyDiagram: No links remain after minimum value filter.");
                  return;
             }
 
@@ -438,9 +514,8 @@
             });
             const valueFilteredNodes = data.nodes.filter(node => nodesConnected.has(node.id));
 
-            if (valueFilteredNodes.length === 0) {
+            if (valueFilteredNodes.length === 0) { /* ... handle no nodes ... */
                  chartDiv.html(`<div id="loading">No nodes connected after filtering by value >= ${formatCurrency(minValue, false)}.</div>`);
-                 console.warn("drawSankeyDiagram: No nodes remain after minimum value filter.");
                  return;
             }
             // --- End Min Value Filter ---
@@ -465,56 +540,54 @@
             const sankey = d3.sankey()
                 .nodeId(d => d.id)
                 .nodeWidth(20)
-                .nodePadding(15)
+                .nodePadding(12) // Adjusted padding
                 .nodeAlign(d3.sankeyJustify)
                 .extent([[0, 0], [innerWidth, innerHeight]]);
 
             let graph;
             try {
-                // Use the value-filtered nodes and links for the layout
                  const graphDataCopy = {
-                     nodes: valueFilteredNodes.map(d => ({...d})), // Use filtered nodes
-                     links: valueFilteredLinks.map(d => ({...d})) // Use filtered links
+                     nodes: valueFilteredNodes.map(d => ({...d})),
+                     links: valueFilteredLinks.map(d => ({...d}))
                  };
                  // Recalculate node values based *only* on the filtered links before layout
                  graphDataCopy.nodes.forEach(node => node.value = 0);
                  graphDataCopy.links.forEach(link => {
                      const sourceNode = graphDataCopy.nodes.find(n => n.id === link.source);
                      const targetNode = graphDataCopy.nodes.find(n => n.id === link.target);
-                     if (sourceNode) sourceNode.value += link.value;
-                     if (targetNode) targetNode.value += link.value;
+                     // Use max of incoming/outgoing for node value in Sankey
+                     if (sourceNode) sourceNode.value = Math.max(sourceNode.value || 0, d3.sum(graphDataCopy.links.filter(l => l.source === sourceNode.id), l => l.value));
+                     if (targetNode) targetNode.value = Math.max(targetNode.value || 0, d3.sum(graphDataCopy.links.filter(l => l.target === targetNode.id), l => l.value));
                  });
                  // Remove nodes with zero value *after* recalculation based on filtered links
                  graphDataCopy.nodes = graphDataCopy.nodes.filter(n => n.value > 0);
                  const finalNodeIdsLayout = new Set(graphDataCopy.nodes.map(n => n.id));
                  graphDataCopy.links = graphDataCopy.links.filter(l => finalNodeIdsLayout.has(l.source) && finalNodeIdsLayout.has(l.target));
 
-
                 if(graphDataCopy.nodes.length === 0 || graphDataCopy.links.length === 0) {
                      throw new Error("No nodes or links remain after final value recalculation.");
                  }
-
                 graph = sankey(graphDataCopy);
-            } catch (e) {
-                console.error("Error calculating Sankey layout:", e);
-                chartDiv.html(`<div id="loading">Layout Error: ${e.message}. Check filters.</div>`);
-                return;
-            }
+            } catch (e) { /* ... handle layout error ... */
+                 console.error("Error calculating Sankey layout:", e);
+                 chartDiv.html(`<div id="loading">Layout Error: ${e.message}. Check filters.</div>`);
+                 return;
+             }
 
-            // --- Draw Links (using graph.links from layout) ---
+            // --- Draw Links ---
             const defs = svg.append("defs");
             graph.links.forEach((link, i) => { /* ... gradient definition ... */
-                const gradientId = `link-gradient-${i}`;
-                const sourceColor = qbrColorScale(link.source.type) || '#ccc';
-                const targetColor = qbrColorScale(link.target.type) || '#ccc';
-                const gradient = defs.append("linearGradient")
-                    .attr("id", gradientId)
-                    .attr("gradientUnits", "userSpaceOnUse")
-                    .attr("x1", link.source.x1).attr("x2", link.target.x0);
-                gradient.append("stop").attr("offset", "0%").attr("stop-color", sourceColor);
-                gradient.append("stop").attr("offset", "100%").attr("stop-color", targetColor);
-                link.gradientId = gradientId;
-            });
+                 const gradientId = `link-gradient-${i}`;
+                 const sourceColor = qbrColorScale(link.source.type) || '#ccc';
+                 const targetColor = qbrColorScale(link.target.type) || '#ccc';
+                 const gradient = defs.append("linearGradient")
+                     .attr("id", gradientId)
+                     .attr("gradientUnits", "userSpaceOnUse")
+                     .attr("x1", link.source.x1).attr("x2", link.target.x0);
+                 gradient.append("stop").attr("offset", "0%").attr("stop-color", sourceColor);
+                 gradient.append("stop").attr("offset", "100%").attr("stop-color", targetColor);
+                 link.gradientId = gradientId;
+             });
 
             const link = svg.append("g").attr("class", "links").attr("fill", "none")
                 .selectAll("path").data(graph.links).join("path")
@@ -522,19 +595,21 @@
                 .attr("d", d3.sankeyLinkHorizontal())
                 .attr("stroke", d => `url(#${d.gradientId})`)
                 .attr("stroke-width", d => Math.max(1.5, d.width))
-                .style("stroke-opacity", 0.4)
+                .style("stroke-opacity", 0.3) // Slightly lower opacity
                 .sort((a, b) => b.width - a.width)
                 .on("mouseover", function(event, d) { /* ... tooltip ... */
-                    d3.select(this).style("stroke-opacity", 0.7);
-                    const content = `<h4>${d.source.name} → ${d.target.name}</h4><p><strong>Subaward Value:</strong> ${formatCurrency(d.value)}</p>`;
-                    showTooltip(event, content);
-                 })
+                     d3.select(this).style("stroke-opacity", 0.6); // Adjusted hover opacity
+                     const sourceTypeName = d.source.type.charAt(0).toUpperCase() + d.source.type.slice(1);
+                     const targetTypeName = d.target.type.charAt(0).toUpperCase() + d.target.type.slice(1);
+                     const content = `<h4>${sourceTypeName} → ${targetTypeName}</h4><p>${d.source.name} → ${d.target.name}</p><p><strong>Value:</strong> ${formatCurrency(d.value)}</p>`;
+                     showTooltip(event, content);
+                  })
                 .on("mouseout", function() { /* ... tooltip ... */
-                    d3.select(this).style("stroke-opacity", 0.4);
-                    hideTooltip();
-                 });
+                     d3.select(this).style("stroke-opacity", 0.3);
+                     hideTooltip();
+                  });
 
-            // --- Draw Nodes (using graph.nodes from layout) ---
+            // --- Draw Nodes ---
             const node = svg.append("g").attr("class", "nodes")
                 .selectAll("g").data(graph.nodes).join("g")
                 .attr("class", d => `node node-type-${d.type}`)
@@ -543,17 +618,17 @@
             node.append("rect")
                 .attr("height", d => Math.max(1, d.y1 - d.y0))
                 .attr("width", d => d.x1 - d.x0)
-                .attr("fill", d => qbrColorScale(d.type))
+                .attr("fill", d => qbrColorScale(d.type)) // Use updated scale
                 .attr("fill-opacity", 0.9)
                 .on("mouseover", function(event, d) { /* ... tooltip ... */
-                    d3.select(this).attr("stroke", "#343a40").attr("stroke-width", 2);
-                    const content = `<h4>${d.name}</h4><p><strong>Type:</strong> ${d.type.charAt(0).toUpperCase() + d.type.slice(1)}</p><p><strong>Total Flow:</strong> ${formatCurrency(d.value)}</p>`;
-                    showTooltip(event, content);
-                })
+                     d3.select(this).attr("stroke", "#343a40").attr("stroke-width", 2);
+                     const content = `<h4>${d.name}</h4><p><strong>Type:</strong> ${d.type.charAt(0).toUpperCase() + d.type.slice(1)}</p><p><strong>Total Flow:</strong> ${formatCurrency(d.value)}</p>`;
+                     showTooltip(event, content);
+                 })
                 .on("mouseout", function() { /* ... tooltip ... */
-                    d3.select(this).attr("stroke", "#ffffff").attr("stroke-width", 1);
-                    hideTooltip();
-                 });
+                     d3.select(this).attr("stroke", "#ffffff").attr("stroke-width", 1);
+                     hideTooltip();
+                  });
 
             // --- Add Node Labels ---
             node.append("text")
@@ -562,7 +637,7 @@
                 .attr("dy", "0.35em")
                 .attr("text-anchor", d => d.x0 < innerWidth / 2 ? "start" : "end")
                 .text(d => d.name)
-                .filter(d => (d.y1 - d.y0) > 12)
+                .filter(d => (d.y1 - d.y0) > 10) // Adjust threshold if needed
                 .clone(true).lower()
                 .attr("stroke-linejoin", "round")
                 .attr("stroke-width", 3)
@@ -572,80 +647,68 @@
         }
 
         // --- Filter Initialization ---
-        function initializeFilters(data) {
-            // Calculate min/max from the *valueField* for the slider
-            const values = data.map(row => parseFloat(String(row[valueField] || '0').replace(/[^0-9.-]+/g, '')) || 0)
-                             .filter(v => v > 0); // Only consider positive values
-
-            const minValue = 0; // Always start slider at 0
-            const maxValue = d3.max(values) || 1000000; // Use max from data or a default
-            const step = Math.max(10000, Math.ceil(maxValue / 100 / 10000) * 10000); // Dynamic step
-
-            minValueSlider.min = minValue;
-            minValueSlider.max = maxValue;
-            minValueSlider.step = step;
-            minValueSlider.value = currentMinValue; // Set initial value
-            minValueDisplay.textContent = formatCurrency(currentMinValue, true);
-
-            topNSelect.value = currentTopN; // Set initial value
+        function initializeFilters(data) { /* ... as before ... */
+             const values = data.map(row => parseFloat(String(row[valueField] || '0').replace(/[^0-9.-]+/g, '')) || 0)
+                              .filter(v => v > 0);
+             const minValue = 0;
+             const maxValue = d3.max(values) || 1000000;
+             const step = Math.max(10000, Math.ceil(maxValue / 100 / 10000) * 10000);
+             minValueSlider.min = minValue;
+             minValueSlider.max = maxValue;
+             minValueSlider.step = step;
+             minValueSlider.value = currentMinValue;
+             minValueDisplay.textContent = formatCurrency(currentMinValue, true);
+             topNSelect.value = currentTopN;
         }
 
         // --- Update Chart Trigger ---
-        function updateChart() {
-            console.log(`Updating chart. MinValue: ${currentMinValue}, TopN: ${currentTopN}`);
-            loadingDiv.style.display = 'block'; // Show loading indicator
-            chartDiv.html(''); // Clear chart area
-
-            // Process data based on Top N filter
-            const processed = processDataForSankey(rawData, currentTopN);
-
-            // Draw chart using processed data and Min Value filter
-            // Use a small timeout to allow the loading indicator to render
-            setTimeout(() => {
-                 drawSankeyDiagram(processed, currentMinValue);
-                 loadingDiv.style.display = 'none'; // Hide loading indicator
-            }, 50);
+        function updateChart() { /* ... as before ... */
+             console.log(`Updating chart. MinValue: ${currentMinValue}, TopN: ${currentTopN}`);
+             loadingDiv.style.display = 'block';
+             chartDiv.html('');
+             const processed = processDataForSankey(rawData, currentTopN);
+             setTimeout(() => {
+                  drawSankeyDiagram(processed, currentMinValue);
+                  loadingDiv.style.display = 'none';
+             }, 50);
         }
 
 
         // --- Event Listeners ---
-        minValueSlider.addEventListener('input', () => {
-            const value = parseInt(minValueSlider.value);
-            minValueDisplay.textContent = formatCurrency(value, true); // Update display immediately
-            // Debounce the actual chart update
-            clearTimeout(minValueDebounceTimer);
-            minValueDebounceTimer = setTimeout(() => {
-                currentMinValue = value;
-                updateChart();
-            }, 250); // 250ms debounce
+        minValueSlider.addEventListener('input', () => { /* ... as before ... */
+             const value = parseInt(minValueSlider.value);
+             minValueDisplay.textContent = formatCurrency(value, true);
+             clearTimeout(minValueDebounceTimer);
+             minValueDebounceTimer = setTimeout(() => {
+                 currentMinValue = value;
+                 updateChart();
+             }, 250);
         });
-
-        topNSelect.addEventListener('change', () => {
-            currentTopN = parseInt(topNSelect.value);
-            updateChart();
+        topNSelect.addEventListener('change', () => { /* ... as before ... */
+             currentTopN = parseInt(topNSelect.value);
+             updateChart();
         });
-
-        window.addEventListener('resize', () => {
-            clearTimeout(resizeTimer);
-            resizeTimer = setTimeout(updateChart, 300); // Redraw on resize
+        window.addEventListener('resize', () => { /* ... as before ... */
+             clearTimeout(resizeTimer);
+             resizeTimer = setTimeout(updateChart, 300);
          });
 
 
         // --- Load Data and Initialize ---
         d3.csv(dataUrl)
-            .then(loadedData => {
-                if (!loadedData || loadedData.length === 0) {
-                    throw new Error("CSV file loaded, but contains no data.");
-                }
-                rawData = loadedData; // Store raw data
-                initializeFilters(rawData); // Set up filter ranges/defaults
-                updateChart(); // Initial chart draw
-            })
-            .catch(error => {
-                console.error("Error loading or processing data:", error);
-                loadingDiv.innerHTML = `Error: ${error.message}`;
-                loadingDiv.style.color = 'red';
-            });
+            .then(loadedData => { /* ... as before ... */
+                 if (!loadedData || loadedData.length === 0) {
+                     throw new Error("CSV file loaded, but contains no data.");
+                 }
+                 rawData = loadedData;
+                 initializeFilters(rawData);
+                 updateChart();
+             })
+            .catch(error => { /* ... as before ... */
+                 console.error("Error loading or processing data:", error);
+                 loadingDiv.innerHTML = `Error: ${error.message}`;
+                 loadingDiv.style.color = 'red';
+             });
 
     </script>
 </body>

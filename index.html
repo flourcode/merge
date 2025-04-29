@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QBR Sankey Diagram - Full Hierarchy (Filtered)</title> {/* Updated Title */}
+    <title>QBR Sankey Diagram - Full Hierarchy (Filtered)</title>
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <script src="https://unpkg.com/d3-sankey@0.12.3/dist/d3-sankey.min.js"></script>
     <style>
@@ -229,10 +229,9 @@
         // --- Global Variables ---
         const dataUrl = "testmanyrows_filtered.csv";
         const valueField = 'subaward_amount';
-        // Updated color scale for 5 levels
         const qbrColorScale = d3.scaleOrdinal()
             .domain(['agency', 'subagency', 'office', 'prime', 'sub'])
-            .range(['#663399', '#8A2BE2', '#007bff', '#17a2b8', '#28a745']); // Added colors
+            .range(['#663399', '#8A2BE2', '#007bff', '#17a2b8', '#28a745']);
 
         let rawData = [];
         let currentMinValue = 0;
@@ -271,18 +270,14 @@
              tooltipDiv.classed('visible', false);
         }
 
-        // --- Data Processing (Handles Full Hierarchy & Top N) ---
+        // --- Data Processing (Handles Full Hierarchy & Top N - CORRECTED) ---
         function processDataForSankey(data, topN) {
             console.log(`Processing ${data.length} raw rows for Sankey. Top N = ${topN}`);
-            const nodesMap = new Map();
-            // Separate maps for each link type for aggregation before Top N filtering
-            const agencyToSubMap = new Map();
-            const subToOfficeMap = new Map();
-            const officeToPrimeMap = new Map();
-            const primeToSubLinksRaw = []; // Store raw P->S links for sorting
+            const nodesMap = new Map(); // Stores ALL potential nodes initially {id -> nodeObject}
+            const primeToSubLinksRaw = []; // Store raw P->S links with hierarchy info
 
+            // --- Pass 1: Collect all potential nodes and raw P->S links ---
             data.forEach(row => {
-                // Extract all hierarchy levels
                 const agencyName = row.prime_award_awarding_agency_name?.trim() || row.awarding_agency_name?.trim();
                 const subAgencyName = row.prime_award_awarding_sub_agency_name?.trim() || row.awarding_sub_agency_name?.trim();
                 const officeName = row.prime_award_awarding_office_name?.trim() || row.awarding_office_name?.trim();
@@ -302,189 +297,89 @@
                 const primeId = `prime-${primeName}`;
                 const subId = `sub-${subName}`;
 
-                // Add/Update nodes
+                // Add/Update nodes (value will be recalculated later)
                 if (!nodesMap.has(agencyId)) nodesMap.set(agencyId, { id: agencyId, name: agencyName, type: 'agency', value: 0 });
                 if (!nodesMap.has(subAgencyId)) nodesMap.set(subAgencyId, { id: subAgencyId, name: subAgencyName, type: 'subagency', value: 0 });
                 if (!nodesMap.has(officeId)) nodesMap.set(officeId, { id: officeId, name: officeName, type: 'office', value: 0 });
                 if (!nodesMap.has(primeId)) nodesMap.set(primeId, { id: primeId, name: primeName, type: 'prime', value: 0 });
                 if (!nodesMap.has(subId)) nodesMap.set(subId, { id: subId, name: subName, type: 'sub', value: 0 });
 
-                // Store raw P->S link for potential Top N filtering
-                primeToSubLinksRaw.push({ source: primeId, target: subId, value: value, type: 'primeToSub' });
-
-                // Aggregate upstream links immediately
-                const linkASKey = `${agencyId}|${subAgencyId}`;
-                if (!agencyToSubMap.has(linkASKey)) agencyToSubMap.set(linkASKey, { source: agencyId, target: subAgencyId, value: 0, type: 'agencyToSub' });
-                agencyToSubMap.get(linkASKey).value += value;
-
-                const linkSOKey = `${subAgencyId}|${officeId}`;
-                if (!subToOfficeMap.has(linkSOKey)) subToOfficeMap.set(linkSOKey, { source: subAgencyId, target: officeId, value: 0, type: 'subToOffice' });
-                subToOfficeMap.get(linkSOKey).value += value;
-
-                const linkOPKey = `${officeId}|${primeId}`;
-                if (!officeToPrimeMap.has(linkOPKey)) officeToPrimeMap.set(linkOPKey, { source: officeId, target: primeId, value: 0, type: 'officeToPrime' });
-                officeToPrimeMap.get(linkOPKey).value += value;
+                // Store raw P->S link with hierarchy IDs for filtering and aggregation
+                primeToSubLinksRaw.push({
+                    agencyId, subAgencyId, officeId, primeId, subId, value
+                });
             });
 
-            let finalNodes = Array.from(nodesMap.values());
+            let finalNodes = [];
             let finalLinks = [];
+            let relevantPrimeSubLinks = primeToSubLinksRaw; // Start with all valid P->S links
 
-            // --- Apply Top N Filter ---
+            // --- Apply Top N Filter (if applicable) ---
             if (topN > 0 && primeToSubLinksRaw.length > 0) {
                 console.log(`Applying Top ${topN} filter...`);
-                primeToSubLinksRaw.sort((a, b) => b.value - a.value);
-                const topPrimeSubLinksRaw = primeToSubLinksRaw.slice(0, topN);
-
-                // Aggregate the *filtered* top Prime -> Sub links
-                const topPrimeSubLinksMap = new Map();
-                topPrimeSubLinksRaw.forEach(link => {
-                    const linkPSKey = `${link.source}|${link.target}`;
-                    if (!topPrimeSubLinksMap.has(linkPSKey)) {
-                        topPrimeSubLinksMap.set(linkPSKey, { source: link.source, target: link.target, value: 0, type: 'primeToSub' });
-                    }
-                    topPrimeSubLinksMap.get(linkPSKey).value += link.value;
-                });
-                const topAggregatedPrimeSubLinks = Array.from(topPrimeSubLinksMap.values());
-
-                // Identify nodes involved in the top P->S flow and trace ancestors
-                const nodesInTopFlow = new Set();
-                const linksInTopFlow = new Map(); // Store final links by key to avoid duplicates
-
-                // Add nodes and links from the top P->S flow
-                topAggregatedPrimeSubLinks.forEach(link => {
-                    nodesInTopFlow.add(link.source);
-                    nodesInTopFlow.add(link.target);
-                    linksInTopFlow.set(`${link.source}|${link.target}`, link);
-                });
-
-                // Iteratively trace ancestors
-                let nodesToTrace = new Set(topAggregatedPrimeSubLinks.map(l => l.source)); // Start with primes from top links
-                const maxIterations = 10; // Safety break
-                let iterations = 0;
-
-                while (nodesToTrace.size > 0 && iterations < maxIterations) {
-                    iterations++;
-                    const nextLevelNodes = new Set();
-                    // Find links ending in current nodesToTrace
-                    const upstreamLinks = [
-                        ...Array.from(officeToPrimeMap.values()),
-                        ...Array.from(subToOfficeMap.values()),
-                        ...Array.from(agencyToSubMap.values())
-                    ].filter(link => nodesToTrace.has(link.target));
-
-                    upstreamLinks.forEach(link => {
-                        // Add the upstream link to the final set if not already present
-                        const linkKey = `${link.source}|${link.target}`;
-                        if (!linksInTopFlow.has(linkKey)) {
-                            // Aggregate value based on the downstream flow it supports
-                            let supportedValue = 0;
-                             linksInTopFlow.forEach(downstreamLink => {
-                                 if (downstreamLink.source === link.target) { // If this link feeds into a known downstream link
-                                     supportedValue += downstreamLink.value; // This might overestimate if multiple paths exist
-                                 }
-                             });
-                             // We need a better way to aggregate upstream link values based *only* on the top N flow
-                             // For simplicity now, let's just include the link structure and recalculate values later
-                             linksInTopFlow.set(linkKey, { ...link, value: 0 }); // Add link with value 0 for now
-                         }
-
-                        // If the source node isn't already included, add it and queue it for tracing
-                        if (!nodesInTopFlow.has(link.source)) {
-                            nodesInTopFlow.add(link.source);
-                            nextLevelNodes.add(link.source);
-                        }
-                    });
-                    nodesToTrace = nextLevelNodes; // Trace the newly added nodes
-                }
-                 if (iterations === maxIterations) console.warn("Top N Ancestor tracing hit max iterations.");
-
-                // Filter nodes based on the traced set
-                finalNodes = finalNodes.filter(node => nodesInTopFlow.has(node.id));
-                // Get all links that connect nodes within the final set
-                finalLinks = Array.from(linksInTopFlow.values());
-
-                // Recalculate ALL link values based ONLY on the top N P->S links
-                const finalPrimeSubLinks = finalLinks.filter(l => l.type === 'primeToSub');
-                const finalOfficePrimeLinks = finalLinks.filter(l => l.type === 'officeToPrime');
-                const finalSubOfficeLinks = finalLinks.filter(l => l.type === 'subToOffice');
-                const finalAgencySubLinks = finalLinks.filter(l => l.type === 'agencyToSub');
-
-                // Reset values
-                finalLinks.forEach(l => l.value = 0);
-
-                // Propagate values upwards from the top P->S links
-                finalPrimeSubLinks.forEach(psLink => {
-                    psLink.value = topPrimeSubLinksMap.get(`${psLink.source}|${psLink.target}`)?.value || 0; // Get aggregated top value
-
-                    finalOfficePrimeLinks.forEach(opLink => {
-                        if (opLink.target === psLink.source) opLink.value += psLink.value;
-                    });
-                    finalSubOfficeLinks.forEach(soLink => {
-                         finalOfficePrimeLinks.forEach(opLink => {
-                             if(opLink.source === soLink.target && opLink.target === psLink.source) soLink.value += psLink.value;
-                         });
-                    });
-                     finalAgencySubLinks.forEach(asLink => {
-                         finalSubOfficeLinks.forEach(soLink => {
-                              finalOfficePrimeLinks.forEach(opLink => {
-                                  if(opLink.source === soLink.target && opLink.target === psLink.source && soLink.source === asLink.target) asLink.value += psLink.value;
-                              });
-                         });
-                     });
-                });
-
-                 // Filter out links that ended up with 0 value after recalculation
-                 finalLinks = finalLinks.filter(l => l.value > 0);
-
-                // Recalculate node values based *only* on the final filtered links
-                finalNodes.forEach(node => node.value = 0);
-                finalLinks.forEach(link => {
-                    const sourceNode = finalNodes.find(n => n.id === link.source);
-                    const targetNode = finalNodes.find(n => n.id === link.target);
-                    // Sankey node value is the max of incoming or outgoing flow
-                    if (sourceNode) sourceNode.value = Math.max(sourceNode.value || 0, d3.sum(finalLinks.filter(l => l.source === sourceNode.id), l => l.value));
-                    if (targetNode) targetNode.value = Math.max(targetNode.value || 0, d3.sum(finalLinks.filter(l => l.target === targetNode.id), l => l.value));
-                     // Simpler node value calc: sum of outgoing links for non-sub nodes, incoming for sub nodes
-                     // if (sourceNode && sourceNode.type !== 'sub') sourceNode.value += link.value;
-                     // if (targetNode && targetNode.type === 'sub') targetNode.value += link.value;
-                });
-
-                 // Remove nodes that ended up with 0 value after filtering
-                 finalNodes = finalNodes.filter(n => n.value > 0);
-                 // Ensure links only connect remaining nodes
-                 const finalNodeIdsTopN = new Set(finalNodes.map(n => n.id));
-                 finalLinks = finalLinks.filter(l => finalNodeIdsTopN.has(l.source) && finalNodeIdsTopN.has(l.target));
-
-
-            } else {
-                // No Top N filter: Aggregate all links
-                 const aggregatedPrimeSubMap = new Map();
-                 primeToSubLinksRaw.forEach(link => {
-                     const linkPSKey = `${link.source}|${link.target}`;
-                     if (!aggregatedPrimeSubMap.has(linkPSKey)) aggregatedPrimeSubMap.set(linkPSKey, { source: link.source, target: link.target, value: 0, type: 'primeToSub' });
-                     aggregatedPrimeSubMap.get(linkPSKey).value += link.value;
-                 });
-
-                finalLinks = [
-                    ...Array.from(agencyToSubMap.values()),
-                    ...Array.from(subToOfficeMap.values()),
-                    ...Array.from(officeToPrimeMap.values()),
-                    ...Array.from(aggregatedPrimeSubMap.values())
-                ].filter(l => l.value > 0);
-
-                 // Recalculate node values based on ALL links
-                 finalNodes.forEach(node => node.value = 0);
-                 finalLinks.forEach(link => {
-                     const sourceNode = finalNodes.find(n => n.id === link.source);
-                     const targetNode = finalNodes.find(n => n.id === link.target);
-                    if (sourceNode) sourceNode.value = Math.max(sourceNode.value || 0, d3.sum(finalLinks.filter(l => l.source === sourceNode.id), l => l.value));
-                    if (targetNode) targetNode.value = Math.max(targetNode.value || 0, d3.sum(finalLinks.filter(l => l.target === targetNode.id), l => l.value));
-                 });
-                 // Optional: Remove nodes with 0 value if desired
-                 // finalNodes = finalNodes.filter(n => n.value > 0);
-                 // const finalNodeIdsAll = new Set(finalNodes.map(n => n.id));
-                 // finalLinks = finalLinks.filter(l => finalNodeIdsAll.has(l.source) && finalNodeIdsAll.has(l.target));
+                primeToSubLinksRaw.sort((a, b) => b.value - a.value); // Sort descending by value
+                relevantPrimeSubLinks = primeToSubLinksRaw.slice(0, topN); // Keep only top N raw links
             }
+
+            // --- Pass 2: Aggregate links and identify nodes based on relevant P->S links ---
+            const finalLinksMap = new Map(); // { 'sourceId|targetId' -> linkObject }
+            const finalNodesInFlow = new Set();
+
+            relevantPrimeSubLinks.forEach(rawLink => {
+                // Add nodes involved in this link to the final set
+                finalNodesInFlow.add(rawLink.agencyId);
+                finalNodesInFlow.add(rawLink.subAgencyId);
+                finalNodesInFlow.add(rawLink.officeId);
+                finalNodesInFlow.add(rawLink.primeId);
+                finalNodesInFlow.add(rawLink.subId);
+
+                // Aggregate link values
+                const linksToUpdate = [
+                    { key: `${rawLink.agencyId}|${rawLink.subAgencyId}`, source: rawLink.agencyId, target: rawLink.subAgencyId, type: 'agencyToSub' },
+                    { key: `${rawLink.subAgencyId}|${rawLink.officeId}`, source: rawLink.subAgencyId, target: rawLink.officeId, type: 'subToOffice' },
+                    { key: `${rawLink.officeId}|${rawLink.primeId}`, source: rawLink.officeId, target: rawLink.primeId, type: 'officeToPrime' },
+                    { key: `${rawLink.primeId}|${rawLink.subId}`, source: rawLink.primeId, target: rawLink.subId, type: 'primeToSub' }
+                ];
+
+                linksToUpdate.forEach(linkInfo => {
+                    if (!finalLinksMap.has(linkInfo.key)) {
+                        finalLinksMap.set(linkInfo.key, {
+                            source: linkInfo.source,
+                            target: linkInfo.target,
+                            value: 0,
+                            type: linkInfo.type
+                        });
+                    }
+                    finalLinksMap.get(linkInfo.key).value += rawLink.value; // Aggregate value
+                });
+            });
+
+            // Filter the initial nodesMap to keep only those involved in the flow
+            finalNodes = Array.from(nodesMap.values()).filter(node => finalNodesInFlow.has(node.id));
+            finalLinks = Array.from(finalLinksMap.values()).filter(link => link.value > 0); // Filter zero-value links
+
+            // --- Pass 3: Recalculate node values based on final links ---
+            finalNodes.forEach(node => node.value = 0); // Reset node values
+            finalLinks.forEach(link => {
+                const sourceNode = finalNodes.find(n => n.id === link.source);
+                const targetNode = finalNodes.find(n => n.id === link.target);
+                // Sankey node value is the max of incoming or outgoing flow for accurate sizing
+                const linkValue = link.value; // Value of the current link
+                if (sourceNode) {
+                    const outgoingSum = d3.sum(finalLinks.filter(l => l.source === sourceNode.id), l => l.value);
+                    sourceNode.value = Math.max(sourceNode.value || 0, outgoingSum);
+                }
+                 if (targetNode) {
+                    const incomingSum = d3.sum(finalLinks.filter(l => l.target === targetNode.id), l => l.value);
+                     targetNode.value = Math.max(targetNode.value || 0, incomingSum);
+                 }
+            });
+
+            // Final cleanup: Remove nodes with zero value if any resulted from max calculation logic
+            finalNodes = finalNodes.filter(n => n.value > 0);
+            const finalNodeIds = new Set(finalNodes.map(n => n.id));
+            finalLinks = finalLinks.filter(l => finalNodeIds.has(l.source) && finalNodeIds.has(l.target));
+
 
             console.log(`Processed data (Top N=${topN}): ${finalNodes.length} nodes, ${finalLinks.length} links.`);
             return { nodes: finalNodes, links: finalLinks };
@@ -499,6 +394,7 @@
 
             // --- Apply Minimum Value Filter ---
             console.log(`Filtering links with value >= ${formatCurrency(minValue, false)}`);
+            // Filter links based on minimum value
             const valueFilteredLinks = data.links.filter(link => link.value >= minValue);
 
             if (valueFilteredLinks.length === 0) { /* ... handle no links ... */
@@ -512,6 +408,7 @@
                 nodesConnected.add(link.source);
                 nodesConnected.add(link.target);
             });
+            // Keep only nodes that are part of the filtered flow
             const valueFilteredNodes = data.nodes.filter(node => nodesConnected.has(node.id));
 
             if (valueFilteredNodes.length === 0) { /* ... handle no nodes ... */
@@ -541,28 +438,36 @@
                 .nodeId(d => d.id)
                 .nodeWidth(20)
                 .nodePadding(12) // Adjusted padding
-                .nodeAlign(d3.sankeyJustify)
+                .nodeAlign(d3.sankeyJustify) // Or d3.sankeyLeft, etc.
                 .extent([[0, 0], [innerWidth, innerHeight]]);
 
             let graph;
             try {
                  const graphDataCopy = {
-                     nodes: valueFilteredNodes.map(d => ({...d})),
-                     links: valueFilteredLinks.map(d => ({...d}))
+                     nodes: valueFilteredNodes.map(d => ({...d})), // Use filtered nodes
+                     links: valueFilteredLinks.map(d => ({...d})) // Use filtered links
                  };
                  // Recalculate node values based *only* on the filtered links before layout
-                 graphDataCopy.nodes.forEach(node => node.value = 0);
+                 graphDataCopy.nodes.forEach(node => node.value = 0); // Reset values
                  graphDataCopy.links.forEach(link => {
                      const sourceNode = graphDataCopy.nodes.find(n => n.id === link.source);
                      const targetNode = graphDataCopy.nodes.find(n => n.id === link.target);
                      // Use max of incoming/outgoing for node value in Sankey
-                     if (sourceNode) sourceNode.value = Math.max(sourceNode.value || 0, d3.sum(graphDataCopy.links.filter(l => l.source === sourceNode.id), l => l.value));
-                     if (targetNode) targetNode.value = Math.max(targetNode.value || 0, d3.sum(graphDataCopy.links.filter(l => l.target === targetNode.id), l => l.value));
+                     const linkValue = link.value;
+                     if (sourceNode) {
+                         const outgoingSum = d3.sum(graphDataCopy.links.filter(l => l.source === sourceNode.id), l => l.value);
+                         sourceNode.value = Math.max(sourceNode.value || 0, outgoingSum);
+                     }
+                     if (targetNode) {
+                         const incomingSum = d3.sum(graphDataCopy.links.filter(l => l.target === targetNode.id), l => l.value);
+                         targetNode.value = Math.max(targetNode.value || 0, incomingSum);
+                     }
                  });
                  // Remove nodes with zero value *after* recalculation based on filtered links
                  graphDataCopy.nodes = graphDataCopy.nodes.filter(n => n.value > 0);
                  const finalNodeIdsLayout = new Set(graphDataCopy.nodes.map(n => n.id));
                  graphDataCopy.links = graphDataCopy.links.filter(l => finalNodeIdsLayout.has(l.source) && finalNodeIdsLayout.has(l.target));
+
 
                 if(graphDataCopy.nodes.length === 0 || graphDataCopy.links.length === 0) {
                      throw new Error("No nodes or links remain after final value recalculation.");
@@ -652,7 +557,8 @@
                               .filter(v => v > 0);
              const minValue = 0;
              const maxValue = d3.max(values) || 1000000;
-             const step = Math.max(10000, Math.ceil(maxValue / 100 / 10000) * 10000);
+             // Ensure step is reasonable, at least 10k
+             const step = Math.max(10000, Math.ceil(maxValue / 100 / 10000) * 10000 || 10000);
              minValueSlider.min = minValue;
              minValueSlider.max = maxValue;
              minValueSlider.step = step;
@@ -666,7 +572,9 @@
              console.log(`Updating chart. MinValue: ${currentMinValue}, TopN: ${currentTopN}`);
              loadingDiv.style.display = 'block';
              chartDiv.html('');
+             // Process data first, applying Top N filter if selected
              const processed = processDataForSankey(rawData, currentTopN);
+             // Then draw, applying the Min Value filter within the drawing function
              setTimeout(() => {
                   drawSankeyDiagram(processed, currentMinValue);
                   loadingDiv.style.display = 'none';

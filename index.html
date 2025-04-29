@@ -3,15 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QBR Sankey Diagram - Prime/Sub Flow</title>
+    <title>QBR Sankey Diagram - Prime/Sub Flow (Filtered)</title>
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <script src="https://unpkg.com/d3-sankey@0.12.3/dist/d3-sankey.min.js"></script>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
-            margin: 20px;
-            background-color: #f8f9fa; /* Lighter background */
-            color: #212529; /* Darker text */
+            margin: 0; /* Remove default margin */
+            padding: 20px; /* Add padding */
+            background-color: #f8f9fa;
+            color: #212529;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -19,18 +20,77 @@
 
         h1 {
             text-align: center;
-            color: #343a40; /* Slightly darker heading */
-            margin-bottom: 25px;
+            color: #343a40;
+            margin-bottom: 15px; /* Reduced margin */
         }
+
+        /* Filter Controls Styling */
+        #filter-controls {
+            display: flex;
+            flex-wrap: wrap; /* Allow wrapping on smaller screens */
+            justify-content: center;
+            align-items: center;
+            gap: 20px; /* Space between filter groups */
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #e9ecef; /* Light gray background */
+            border-radius: 8px;
+            width: 95%;
+            max-width: 800px; /* Limit width of filter bar */
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column; /* Stack label and control */
+            align-items: flex-start; /* Align label left */
+        }
+
+        .filter-group label {
+            font-size: 0.85em;
+            color: #495057;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+
+        .filter-group input[type="range"],
+        .filter-group select {
+            padding: 5px 8px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+         .filter-group input[type="range"] {
+             width: 180px; /* Fixed width for slider */
+             cursor: pointer;
+         }
+         .filter-group select {
+             min-width: 120px; /* Minimum width for dropdown */
+         }
+
+        #min-value-display {
+            font-weight: bold;
+            color: #007bff; /* Blue color for value */
+            margin-left: 5px; /* Space next to label */
+            min-width: 60px; /* Ensure space for value */
+            display: inline-block; /* Keep on same line */
+            text-align: right;
+        }
+         /* Align value display better */
+         .filter-group#min-value-group label {
+             display: flex;
+             align-items: center;
+         }
+
 
         #chart-container {
             width: 95%;
-            max-width: 1300px; /* Slightly wider max width */
-            height: 78vh; /* Slightly taller */
-            min-height: 550px;
+            max-width: 1300px;
+            height: 70vh; /* Adjusted height slightly */
+            min-height: 500px;
             background-color: #ffffff;
             border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); /* Softer shadow */
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
             position: relative;
             overflow: hidden;
         }
@@ -44,16 +104,16 @@
         .node rect {
             cursor: pointer;
             shape-rendering: crispEdges;
-            stroke: #ffffff; /* White stroke for better separation */
-            stroke-width: 1px; /* Thicker stroke */
+            stroke: #ffffff;
+            stroke-width: 1px;
             transition: fill-opacity 0.2s ease, stroke-width 0.2s ease, stroke 0.2s ease;
-            rx: 2px; /* Slightly rounded corners */
+            rx: 2px;
             ry: 2px;
         }
 
         .node:hover rect {
             stroke-width: 2px;
-            stroke: #007bff; /* Highlight stroke */
+            stroke: #007bff;
             fill-opacity: 1;
         }
 
@@ -65,15 +125,15 @@
         .node text {
             pointer-events: none;
             fill: #343a40;
-            font-size: 11px; /* Slightly larger */
+            font-size: 11px;
             font-weight: 500;
-            text-shadow: 0 1px 1px rgba(255,255,255,0.7); /* Subtle shadow */
+            text-shadow: 0 1px 1px rgba(255,255,255,0.7);
         }
 
         /* Link Styling */
         .link {
             fill: none;
-            stroke-opacity: 0.35; /* Slightly more opaque */
+            stroke-opacity: 0.35;
             transition: stroke-opacity 0.2s ease;
         }
 
@@ -84,11 +144,11 @@
         /* Tooltip Styling */
         #tooltip {
             position: absolute;
-            background-color: rgba(40, 40, 40, 0.9); /* Darker tooltip */
+            background-color: rgba(40, 40, 40, 0.9);
             color: white;
-            padding: 10px 15px; /* More padding */
+            padding: 10px 15px;
             border-radius: 5px;
-            font-size: 13px; /* Larger font */
+            font-size: 13px;
             pointer-events: none;
             opacity: 0;
             transition: opacity 0.2s ease;
@@ -102,9 +162,9 @@
         }
 
         #tooltip h4 {
-            margin: 0 0 8px 0; /* More space below title */
+            margin: 0 0 8px 0;
             font-size: 14px;
-            border-bottom: 1px solid #666; /* Separator */
+            border-bottom: 1px solid #666;
             padding-bottom: 4px;
         }
 
@@ -112,28 +172,52 @@
             margin: 4px 0;
         }
         #tooltip strong {
-            color: #a2d2ff; /* Light blue for emphasis */
+            color: #a2d2ff;
         }
 
         #loading {
             text-align: center;
             padding: 50px;
             font-size: 1.2em;
-            color: #6c757d; /* Gray color */
+            color: #6c757d;
         }
 
         /* Responsive adjustments */
         @media (max-width: 768px) {
-            body { margin: 10px; }
+            body { padding: 10px; }
             h1 { font-size: 1.4em; }
-            #chart-container { height: 70vh; min-height: 450px; }
+            #filter-controls { flex-direction: column; align-items: stretch; gap: 15px; }
+            .filter-group { width: 100%; }
+            .filter-group input[type="range"] { width: calc(100% - 16px); } /* Adjust slider width */
+            #chart-container { height: 65vh; min-height: 400px; }
             .node text { font-size: 10px; }
             #tooltip { font-size: 12px; padding: 8px 12px; }
         }
+         @media (max-width: 480px) {
+             h1 { font-size: 1.2em; }
+         }
     </style>
 </head>
 <body>
     <h1>Contract Flow: Agency → Prime → Subcontractor</h1>
+
+    <div id="filter-controls">
+        <div class="filter-group" id="min-value-group">
+            <label for="min-value-slider">Min Subaward Value: <span id="min-value-display">$0K</span></label>
+            <input type="range" id="min-value-slider" name="min-value" min="0" max="1000000" step="50000" value="0">
+        </div>
+        <div class="filter-group">
+            <label for="top-n-select">Show Contracts:</label>
+            <select id="top-n-select" name="top-n">
+                <option value="0">Show All</option>
+                <option value="10">Top 10</option>
+                <option value="20">Top 20</option>
+                <option value="50">Top 50</option>
+                <option value="100">Top 100</option>
+            </select>
+        </div>
+    </div>
+
     <div id="chart-container">
         <div id="loading">Loading data...</div>
         <div id="chart"></div>
@@ -141,221 +225,335 @@
     </div>
 
     <script>
-        // --- Configuration ---
-        const dataUrl = "testmanyrows_filtered.csv"; // Path to your merged CSV file
-        const valueField = 'subaward_amount'; // Field containing the value for links
-
-        // Define specific colors for the simplified hierarchy
+        // --- Global Variables ---
+        const dataUrl = "testmanyrows_filtered.csv";
+        const valueField = 'subaward_amount';
         const qbrColorScale = d3.scaleOrdinal()
             .domain(['agency', 'prime', 'sub'])
-            .range(['#6f42c1', '#007bff', '#28a745']); // Purple, Blue, Green
+            .range(['#6f42c1', '#007bff', '#28a745']);
+
+        let rawData = []; // Store the original loaded data
+        let currentMinValue = 0;
+        let currentTopN = 0; // 0 means show all
+        let minValueDebounceTimer;
+        let resizeTimer;
+
+        // --- DOM Elements ---
+        const minValueSlider = document.getElementById('min-value-slider');
+        const minValueDisplay = document.getElementById('min-value-display');
+        const topNSelect = document.getElementById('top-n-select');
+        const loadingDiv = document.getElementById('loading');
+        const chartDiv = d3.select('#chart');
+        const tooltipDiv = d3.select('#tooltip');
+
 
         // --- Helper Functions ---
-        function formatCurrency(value) {
+        function formatCurrency(value, useSuffix = true) {
             if (typeof value !== 'number' || isNaN(value)) return '$?';
-            // Use compact notation for large numbers in tooltips
-             if (Math.abs(value) >= 1e9) return `$${(value / 1e9).toFixed(1)}B`;
-             if (Math.abs(value) >= 1e6) return `$${(value / 1e6).toFixed(1)}M`;
-             if (Math.abs(value) >= 1e3) return `$${(value / 1e3).toFixed(0)}K`;
+            if (useSuffix) {
+                if (Math.abs(value) >= 1e9) return `$${(value / 1e9).toFixed(1)}B`;
+                if (Math.abs(value) >= 1e6) return `$${(value / 1e6).toFixed(1)}M`;
+                if (Math.abs(value) >= 1e3) return `$${(value / 1e3).toFixed(0)}K`;
+            }
             return new Intl.NumberFormat('en-US', {
                 style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0
             }).format(value);
         }
 
         function showTooltip(event, content) {
-            const tooltip = d3.select('#tooltip');
-            tooltip.html(content)
+            tooltipDiv.html(content)
                 .style('left', (event.pageX + 15) + 'px')
                 .style('top', (event.pageY - 10) + 'px')
                 .classed('visible', true);
         }
 
         function hideTooltip() {
-            d3.select('#tooltip').classed('visible', false);
+            tooltipDiv.classed('visible', false);
         }
 
-        // --- Data Processing (Simplified for QBR) ---
-        function processDataForSankey(data) {
-            console.log(`Processing ${data.length} rows for QBR Sankey...`);
-            const nodesMap = new Map(); // { id -> nodeObject }
-            const linksMap = new Map(); // { 'sourceId|targetId' -> linkObject }
+        // --- Data Processing (Handles Top N) ---
+        function processDataForSankey(data, topN) {
+            console.log(`Processing ${data.length} raw rows for Sankey. Top N = ${topN}`);
+            const nodesMap = new Map();
+            const linksMap = new Map();
+            const primeToSubLinksRaw = []; // Store raw prime->sub links for sorting
 
             data.forEach(row => {
-                // Extract key levels
                 const agencyName = row.prime_award_awarding_agency_name?.trim() || row.awarding_agency_name?.trim();
                 const primeName = row.prime_awardee_name?.trim() || row.recipient_name?.trim();
-                const subName = row.subawardee_name?.trim(); // This might be null/empty
-
-                // Get the value (subaward amount represents the flow)
+                const subName = row.subawardee_name?.trim();
                 const value = parseFloat(String(row[valueField] || '0').replace(/[^0-9.-]+/g, '')) || 0;
 
-                // Skip row if essential info is missing or value is invalid/zero
-                // Crucially, we need a subName for this simplified flow view
-                if (!agencyName || !primeName || !subName || value <= 0) {
-                    return; // Skip rows that don't represent a valid Agency -> Prime -> Sub link
-                }
+                if (!agencyName || !primeName || !subName || value <= 0) return;
 
-                // Define node IDs for the simplified hierarchy
                 const agencyId = `agency-${agencyName}`;
                 const primeId = `prime-${primeName}`;
                 const subId = `sub-${subName}`;
 
-                // Add/Update nodes
+                // Add nodes - value accumulation is less critical here, focus on links
                 if (!nodesMap.has(agencyId)) nodesMap.set(agencyId, { id: agencyId, name: agencyName, type: 'agency', value: 0 });
                 if (!nodesMap.has(primeId)) nodesMap.set(primeId, { id: primeId, name: primeName, type: 'prime', value: 0 });
                 if (!nodesMap.has(subId)) nodesMap.set(subId, { id: subId, name: subName, type: 'sub', value: 0 });
 
-                // Accumulate value onto nodes (represents total flow through that node)
-                nodesMap.get(agencyId).value += value;
-                nodesMap.get(primeId).value += value;
-                nodesMap.get(subId).value += value;
+                // Store raw prime->sub link for potential Top N filtering
+                 primeToSubLinksRaw.push({ source: primeId, target: subId, value: value, type: 'primeToSub' });
 
-                // Add/Update links (Agency -> Prime and Prime -> Sub)
-                // Link 1: Agency -> Prime
+                // Aggregate Agency -> Prime links immediately (will be filtered later if Top N applies)
                 const linkAPKey = `${agencyId}|${primeId}`;
                 if (!linksMap.has(linkAPKey)) {
                     linksMap.set(linkAPKey, { source: agencyId, target: primeId, value: 0, type: 'agencyToPrime' });
                 }
                 linksMap.get(linkAPKey).value += value;
-
-                // Link 2: Prime -> Sub
-                const linkPSKey = `${primeId}|${subId}`;
-                if (!linksMap.has(linkPSKey)) {
-                    linksMap.set(linkPSKey, { source: primeId, target: subId, value: 0, type: 'primeToSub' });
-                }
-                linksMap.get(linkPSKey).value += value;
             });
 
-            const nodes = Array.from(nodesMap.values());
-            const links = Array.from(linksMap.values()).filter(l => l.value > 0); // Filter zero-value links
+            let finalNodes = Array.from(nodesMap.values());
+            let finalLinks = [];
 
-            console.log(`Processed into ${nodes.length} nodes and ${links.length} links (Agency->Prime->Sub).`);
+            // --- Apply Top N Filter ---
+            if (topN > 0 && primeToSubLinksRaw.length > 0) {
+                console.log(`Applying Top ${topN} filter...`);
+                primeToSubLinksRaw.sort((a, b) => b.value - a.value); // Sort descending by value
+                const topPrimeSubLinks = primeToSubLinksRaw.slice(0, topN);
 
-            // Ensure all nodes referenced by links exist
-            const finalNodeIds = new Set(nodes.map(n => n.id));
-            const validLinks = links.filter(l => finalNodeIds.has(l.source) && finalNodeIds.has(l.target));
+                // Aggregate the *filtered* top Prime -> Sub links
+                const topLinksMap = new Map();
+                topPrimeSubLinks.forEach(link => {
+                     const linkPSKey = `${link.source}|${link.target}`;
+                     if (!topLinksMap.has(linkPSKey)) {
+                         topLinksMap.set(linkPSKey, { source: link.source, target: link.target, value: 0, type: 'primeToSub' });
+                     }
+                     topLinksMap.get(linkPSKey).value += link.value;
+                });
 
-            console.log(`Final valid data: ${nodes.length} nodes, ${validLinks.length} links.`);
-            return { nodes: nodes, links: validLinks };
+                const topLinkValues = Array.from(topLinksMap.values());
+
+                // Identify nodes involved in the top flow (Subs, Primes, and their Agencies)
+                const nodesInTopFlow = new Set();
+                const agencyPrimeLinksInTopFlow = new Map(); // Re-aggregate Agency->Prime links for *only* top flow
+
+                topLinkValues.forEach(link => {
+                    nodesInTopFlow.add(link.source); // Add prime ID
+                    nodesInTopFlow.add(link.target); // Add sub ID
+
+                    // Find the corresponding agency for this prime
+                    const primeNode = nodesMap.get(link.source); // Get original prime node
+                     if (primeNode) {
+                         // Find agency->prime links involving this prime from the initial aggregation
+                         linksMap.forEach((apLink, key) => {
+                             if (apLink.target === primeNode.id) {
+                                 nodesInTopFlow.add(apLink.source); // Add agency ID
+                                 // Aggregate the Agency->Prime link value *based on the top subaward flow*
+                                 if (!agencyPrimeLinksInTopFlow.has(key)) {
+                                     agencyPrimeLinksInTopFlow.set(key, { source: apLink.source, target: apLink.target, value: 0, type: 'agencyToPrime' });
+                                 }
+                                 // Add the value of the *subaward* link to the agency->prime link
+                                 agencyPrimeLinksInTopFlow.get(key).value += link.value;
+                             }
+                         });
+                     }
+                });
+
+                // Filter nodes and combine link types
+                finalNodes = finalNodes.filter(node => nodesInTopFlow.has(node.id));
+                finalLinks = [
+                    ...Array.from(agencyPrimeLinksInTopFlow.values()), // Use re-aggregated A->P links
+                    ...topLinkValues // Use aggregated Top N P->S links
+                ].filter(l => l.value > 0); // Ensure links still have value
+
+                // Recalculate node values based *only* on the filtered links
+                finalNodes.forEach(node => node.value = 0); // Reset node values
+                finalLinks.forEach(link => {
+                    const sourceNode = finalNodes.find(n => n.id === link.source);
+                    const targetNode = finalNodes.find(n => n.id === link.target);
+                    if (sourceNode) sourceNode.value += link.value;
+                    if (targetNode) targetNode.value += link.value;
+                });
+                 // Remove nodes that ended up with 0 value after filtering
+                 finalNodes = finalNodes.filter(n => n.value > 0);
+                 // Ensure links only connect remaining nodes
+                 const finalNodeIdsTopN = new Set(finalNodes.map(n => n.id));
+                 finalLinks = finalLinks.filter(l => finalNodeIdsTopN.has(l.source) && finalNodeIdsTopN.has(l.target));
+
+
+            } else {
+                // No Top N filter or no prime-sub links: Use all aggregated links
+                 // Need to aggregate prime->sub links if not done already
+                 const aggregatedPrimeSubMap = new Map();
+                 primeToSubLinksRaw.forEach(link => {
+                     const linkPSKey = `${link.source}|${link.target}`;
+                     if (!aggregatedPrimeSubMap.has(linkPSKey)) {
+                         aggregatedPrimeSubMap.set(linkPSKey, { source: link.source, target: link.target, value: 0, type: 'primeToSub' });
+                     }
+                     aggregatedPrimeSubMap.get(linkPSKey).value += link.value;
+                 });
+
+                finalLinks = [
+                    ...Array.from(linksMap.values()), // Agency -> Prime links
+                    ...Array.from(aggregatedPrimeSubMap.values()) // Prime -> Sub links
+                ].filter(l => l.value > 0);
+
+                 // Recalculate node values based on ALL links
+                 finalNodes.forEach(node => node.value = 0);
+                 finalLinks.forEach(link => {
+                     const sourceNode = finalNodes.find(n => n.id === link.source);
+                     const targetNode = finalNodes.find(n => n.id === link.target);
+                     if (sourceNode) sourceNode.value += link.value;
+                     if (targetNode) targetNode.value += link.value;
+                 });
+                 // Remove nodes with 0 value if needed (optional, might remove intermediate nodes)
+                 // finalNodes = finalNodes.filter(n => n.value > 0);
+                 // const finalNodeIdsAll = new Set(finalNodes.map(n => n.id));
+                 // finalLinks = finalLinks.filter(l => finalNodeIdsAll.has(l.source) && finalNodeIdsAll.has(l.target));
+            }
+
+            console.log(`Processed data (Top N=${topN}): ${finalNodes.length} nodes, ${finalLinks.length} links.`);
+            return { nodes: finalNodes, links: finalLinks };
         }
 
 
-        // --- Drawing Function ---
-        function drawSankeyDiagram(data) {
-            const chartElement = d3.select('#chart');
-            chartElement.html(''); // Clear previous
+        // --- Drawing Function (Handles Min Value Filter) ---
+        function drawSankeyDiagram(data, minValue) {
+            chartDiv.html(''); // Clear previous
 
-            if (!data || !data.nodes || !data.links || data.nodes.length === 0 || data.links.length === 0) {
-                chartElement.html('<div id="loading">No data available to display the Agency → Prime → Sub flow. Check if the source file contains subaward data.</div>');
-                console.warn("drawSankeyDiagram: No valid data for the simplified flow.");
+            if (!data || !data.nodes || !data.links) {
+                chartDiv.html('<div id="loading">Processing failed.</div>');
                 return;
             }
+
+            // --- Apply Minimum Value Filter ---
+            console.log(`Filtering links with value >= ${formatCurrency(minValue, false)}`);
+            const valueFilteredLinks = data.links.filter(link => link.value >= minValue);
+
+            if (valueFilteredLinks.length === 0) {
+                 chartDiv.html(`<div id="loading">No contract links found above ${formatCurrency(minValue, false)}. Try lowering the minimum value filter.</div>`);
+                 console.warn("drawSankeyDiagram: No links remain after minimum value filter.");
+                 return;
+            }
+
+            // Identify nodes connected by the filtered links
+            const nodesConnected = new Set();
+            valueFilteredLinks.forEach(link => {
+                nodesConnected.add(link.source);
+                nodesConnected.add(link.target);
+            });
+            const valueFilteredNodes = data.nodes.filter(node => nodesConnected.has(node.id));
+
+            if (valueFilteredNodes.length === 0) {
+                 chartDiv.html(`<div id="loading">No nodes connected after filtering by value >= ${formatCurrency(minValue, false)}.</div>`);
+                 console.warn("drawSankeyDiagram: No nodes remain after minimum value filter.");
+                 return;
+            }
+            // --- End Min Value Filter ---
+
 
             const chartContainer = document.getElementById('chart');
             const containerRect = chartContainer.getBoundingClientRect();
             const width = containerRect.width;
             const height = containerRect.height;
-            const margin = { top: 25, right: 25, bottom: 25, left: 25 }; // Slightly larger margins
+            const margin = { top: 25, right: 25, bottom: 25, left: 25 };
             const innerWidth = width - margin.left - margin.right;
             const innerHeight = height - margin.top - margin.bottom;
 
-            if (innerWidth <= 10 || innerHeight <= 10) {
-                chartElement.html('<div id="loading">Chart container is too small.</div>');
-                return;
-            }
+            if (innerWidth <= 10 || innerHeight <= 10) { /* ... handle small container ... */ return; }
 
-            const svg = chartElement.append('svg')
+            const svg = chartDiv.append('svg')
                 .attr('width', width)
                 .attr('height', height)
                 .append('g')
                 .attr('transform', `translate(${margin.left},${margin.top})`);
 
-            // Create Sankey layout generator
             const sankey = d3.sankey()
                 .nodeId(d => d.id)
-                .nodeWidth(20) // Wider nodes
-                .nodePadding(15) // More padding
-                .nodeAlign(d3.sankeyJustify) // Justify alignment often looks good
+                .nodeWidth(20)
+                .nodePadding(15)
+                .nodeAlign(d3.sankeyJustify)
                 .extent([[0, 0], [innerWidth, innerHeight]]);
 
-            // Compute the Sankey layout
             let graph;
             try {
+                // Use the value-filtered nodes and links for the layout
                  const graphDataCopy = {
-                     nodes: data.nodes.map(d => ({...d})),
-                     links: data.links.map(d => ({...d}))
+                     nodes: valueFilteredNodes.map(d => ({...d})), // Use filtered nodes
+                     links: valueFilteredLinks.map(d => ({...d})) // Use filtered links
                  };
+                 // Recalculate node values based *only* on the filtered links before layout
+                 graphDataCopy.nodes.forEach(node => node.value = 0);
+                 graphDataCopy.links.forEach(link => {
+                     const sourceNode = graphDataCopy.nodes.find(n => n.id === link.source);
+                     const targetNode = graphDataCopy.nodes.find(n => n.id === link.target);
+                     if (sourceNode) sourceNode.value += link.value;
+                     if (targetNode) targetNode.value += link.value;
+                 });
+                 // Remove nodes with zero value *after* recalculation based on filtered links
+                 graphDataCopy.nodes = graphDataCopy.nodes.filter(n => n.value > 0);
+                 const finalNodeIdsLayout = new Set(graphDataCopy.nodes.map(n => n.id));
+                 graphDataCopy.links = graphDataCopy.links.filter(l => finalNodeIdsLayout.has(l.source) && finalNodeIdsLayout.has(l.target));
+
+
+                if(graphDataCopy.nodes.length === 0 || graphDataCopy.links.length === 0) {
+                     throw new Error("No nodes or links remain after final value recalculation.");
+                 }
+
                 graph = sankey(graphDataCopy);
             } catch (e) {
                 console.error("Error calculating Sankey layout:", e);
-                chartElement.html(`<div id="loading">Layout Error: ${e.message}.</div>`);
+                chartDiv.html(`<div id="loading">Layout Error: ${e.message}. Check filters.</div>`);
                 return;
             }
 
-            // --- Draw Links ---
-             // Create gradient definitions for links
+            // --- Draw Links (using graph.links from layout) ---
             const defs = svg.append("defs");
-            graph.links.forEach((link, i) => {
+            graph.links.forEach((link, i) => { /* ... gradient definition ... */
                 const gradientId = `link-gradient-${i}`;
-                const sourceColor = qbrColorScale(link.source.type) || '#ccc'; // Use QBR scale
-                const targetColor = qbrColorScale(link.target.type) || '#ccc'; // Use QBR scale
+                const sourceColor = qbrColorScale(link.source.type) || '#ccc';
+                const targetColor = qbrColorScale(link.target.type) || '#ccc';
                 const gradient = defs.append("linearGradient")
                     .attr("id", gradientId)
                     .attr("gradientUnits", "userSpaceOnUse")
-                    .attr("x1", link.source.x1) // Start of link
-                    .attr("x2", link.target.x0); // End of link
-
+                    .attr("x1", link.source.x1).attr("x2", link.target.x0);
                 gradient.append("stop").attr("offset", "0%").attr("stop-color", sourceColor);
                 gradient.append("stop").attr("offset", "100%").attr("stop-color", targetColor);
-                link.gradientId = gradientId; // Assign ID to link data
+                link.gradientId = gradientId;
             });
 
-            const link = svg.append("g")
-                .attr("class", "links")
-                .attr("fill", "none")
-                // Links will use gradient stroke
-                .selectAll("path")
-                .data(graph.links)
-                .join("path")
+            const link = svg.append("g").attr("class", "links").attr("fill", "none")
+                .selectAll("path").data(graph.links).join("path")
                 .attr("class", "link")
                 .attr("d", d3.sankeyLinkHorizontal())
-                .attr("stroke", d => `url(#${d.gradientId})`) // Apply gradient
-                .attr("stroke-width", d => Math.max(1.5, d.width)) // Slightly thicker base
-                .style("stroke-opacity", 0.4) // Adjusted opacity
+                .attr("stroke", d => `url(#${d.gradientId})`)
+                .attr("stroke-width", d => Math.max(1.5, d.width))
+                .style("stroke-opacity", 0.4)
                 .sort((a, b) => b.width - a.width)
-                .on("mouseover", function(event, d) {
+                .on("mouseover", function(event, d) { /* ... tooltip ... */
                     d3.select(this).style("stroke-opacity", 0.7);
                     const content = `<h4>${d.source.name} → ${d.target.name}</h4><p><strong>Subaward Value:</strong> ${formatCurrency(d.value)}</p>`;
                     showTooltip(event, content);
-                })
-                .on("mouseout", function() {
+                 })
+                .on("mouseout", function() { /* ... tooltip ... */
                     d3.select(this).style("stroke-opacity", 0.4);
                     hideTooltip();
-                });
+                 });
 
-            // --- Draw Nodes ---
-            const node = svg.append("g")
-                .attr("class", "nodes")
-                .selectAll("g")
-                .data(graph.nodes)
-                .join("g")
+            // --- Draw Nodes (using graph.nodes from layout) ---
+            const node = svg.append("g").attr("class", "nodes")
+                .selectAll("g").data(graph.nodes).join("g")
                 .attr("class", d => `node node-type-${d.type}`)
                 .attr("transform", d => `translate(${d.x0},${d.y0})`);
 
             node.append("rect")
-                .attr("height", d => Math.max(1, d.y1 - d.y0)) // Min height 1px
+                .attr("height", d => Math.max(1, d.y1 - d.y0))
                 .attr("width", d => d.x1 - d.x0)
-                .attr("fill", d => qbrColorScale(d.type)) // Use QBR color scale
+                .attr("fill", d => qbrColorScale(d.type))
                 .attr("fill-opacity", 0.9)
-                .on("mouseover", function(event, d) {
+                .on("mouseover", function(event, d) { /* ... tooltip ... */
                     d3.select(this).attr("stroke", "#343a40").attr("stroke-width", 2);
                     const content = `<h4>${d.name}</h4><p><strong>Type:</strong> ${d.type.charAt(0).toUpperCase() + d.type.slice(1)}</p><p><strong>Total Flow:</strong> ${formatCurrency(d.value)}</p>`;
                     showTooltip(event, content);
                 })
-                .on("mouseout", function() {
-                    d3.select(this).attr("stroke", "#ffffff").attr("stroke-width", 1); // Reset stroke
+                .on("mouseout", function() { /* ... tooltip ... */
+                    d3.select(this).attr("stroke", "#ffffff").attr("stroke-width", 1);
                     hideTooltip();
-                });
+                 });
 
             // --- Add Node Labels ---
             node.append("text")
@@ -364,46 +562,90 @@
                 .attr("dy", "0.35em")
                 .attr("text-anchor", d => d.x0 < innerWidth / 2 ? "start" : "end")
                 .text(d => d.name)
-                // Only add labels if the node height is sufficient
-                .filter(d => (d.y1 - d.y0) > 12) // Only add text if node height > 12px
-                .clone(true).lower() // Clone to create a white stroke for contrast
+                .filter(d => (d.y1 - d.y0) > 12)
+                .clone(true).lower()
                 .attr("stroke-linejoin", "round")
                 .attr("stroke-width", 3)
                 .attr("stroke", "#fff");
 
-
-            console.log("QBR Sankey diagram drawn.");
+            console.log("Sankey diagram drawn with filtered data.");
         }
+
+        // --- Filter Initialization ---
+        function initializeFilters(data) {
+            // Calculate min/max from the *valueField* for the slider
+            const values = data.map(row => parseFloat(String(row[valueField] || '0').replace(/[^0-9.-]+/g, '')) || 0)
+                             .filter(v => v > 0); // Only consider positive values
+
+            const minValue = 0; // Always start slider at 0
+            const maxValue = d3.max(values) || 1000000; // Use max from data or a default
+            const step = Math.max(10000, Math.ceil(maxValue / 100 / 10000) * 10000); // Dynamic step
+
+            minValueSlider.min = minValue;
+            minValueSlider.max = maxValue;
+            minValueSlider.step = step;
+            minValueSlider.value = currentMinValue; // Set initial value
+            minValueDisplay.textContent = formatCurrency(currentMinValue, true);
+
+            topNSelect.value = currentTopN; // Set initial value
+        }
+
+        // --- Update Chart Trigger ---
+        function updateChart() {
+            console.log(`Updating chart. MinValue: ${currentMinValue}, TopN: ${currentTopN}`);
+            loadingDiv.style.display = 'block'; // Show loading indicator
+            chartDiv.html(''); // Clear chart area
+
+            // Process data based on Top N filter
+            const processed = processDataForSankey(rawData, currentTopN);
+
+            // Draw chart using processed data and Min Value filter
+            // Use a small timeout to allow the loading indicator to render
+            setTimeout(() => {
+                 drawSankeyDiagram(processed, currentMinValue);
+                 loadingDiv.style.display = 'none'; // Hide loading indicator
+            }, 50);
+        }
+
+
+        // --- Event Listeners ---
+        minValueSlider.addEventListener('input', () => {
+            const value = parseInt(minValueSlider.value);
+            minValueDisplay.textContent = formatCurrency(value, true); // Update display immediately
+            // Debounce the actual chart update
+            clearTimeout(minValueDebounceTimer);
+            minValueDebounceTimer = setTimeout(() => {
+                currentMinValue = value;
+                updateChart();
+            }, 250); // 250ms debounce
+        });
+
+        topNSelect.addEventListener('change', () => {
+            currentTopN = parseInt(topNSelect.value);
+            updateChart();
+        });
+
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(updateChart, 300); // Redraw on resize
+         });
+
 
         // --- Load Data and Initialize ---
         d3.csv(dataUrl)
             .then(loadedData => {
-                document.getElementById('loading').style.display = 'none';
                 if (!loadedData || loadedData.length === 0) {
                     throw new Error("CSV file loaded, but contains no data.");
                 }
-                const processed = processDataForSankey(loadedData);
-                drawSankeyDiagram(processed);
+                rawData = loadedData; // Store raw data
+                initializeFilters(rawData); // Set up filter ranges/defaults
+                updateChart(); // Initial chart draw
             })
             .catch(error => {
                 console.error("Error loading or processing data:", error);
-                document.getElementById('loading').innerHTML = `Error: ${error.message}`;
-                document.getElementById('loading').style.color = 'red';
+                loadingDiv.innerHTML = `Error: ${error.message}`;
+                loadingDiv.style.color = 'red';
             });
-
-        // Optional: Redraw on window resize
-        let resizeTimer;
-        window.addEventListener('resize', () => {
-            clearTimeout(resizeTimer);
-            resizeTimer = setTimeout(() => {
-                 d3.csv(dataUrl).then(loadedData => {
-                     if (loadedData && loadedData.length > 0) {
-                        const processed = processDataForSankey(loadedData);
-                        drawSankeyDiagram(processed);
-                     }
-                 }).catch(e => console.error("Resize redraw error:", e));
-             }, 300); // Slightly longer debounce
-         });
 
     </script>
 </body>

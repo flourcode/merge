@@ -3,15 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sankey Diagram - Merged Contract Data</title>
+    <title>QBR Sankey Diagram - Prime/Sub Flow</title>
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <script src="https://unpkg.com/d3-sankey@0.12.3/dist/d3-sankey.min.js"></script>
     <style>
         body {
-            font-family: sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
             margin: 20px;
-            background-color: #f4f4f4;
-            color: #333;
+            background-color: #f8f9fa; /* Lighter background */
+            color: #212529; /* Darker text */
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -19,19 +19,20 @@
 
         h1 {
             text-align: center;
-            color: #2c3e50;
+            color: #343a40; /* Slightly darker heading */
+            margin-bottom: 25px;
         }
 
         #chart-container {
             width: 95%;
-            max-width: 1200px; /* Limit max width */
-            height: 75vh; /* Responsive height */
-            min-height: 500px; /* Minimum height */
-            background-color: #fff;
+            max-width: 1300px; /* Slightly wider max width */
+            height: 78vh; /* Slightly taller */
+            min-height: 550px;
+            background-color: #ffffff;
             border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            position: relative; /* For tooltip positioning */
-            overflow: hidden; /* Ensure SVG fits */
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); /* Softer shadow */
+            position: relative;
+            overflow: hidden;
         }
 
         #chart {
@@ -39,49 +40,61 @@
             height: 100%;
         }
 
+        /* Node Styling */
         .node rect {
             cursor: pointer;
             shape-rendering: crispEdges;
-            stroke: #555; /* Darker stroke for nodes */
-            stroke-width: 0.5px;
-            transition: fill-opacity 0.2s ease, stroke-width 0.2s ease;
+            stroke: #ffffff; /* White stroke for better separation */
+            stroke-width: 1px; /* Thicker stroke */
+            transition: fill-opacity 0.2s ease, stroke-width 0.2s ease, stroke 0.2s ease;
+            rx: 2px; /* Slightly rounded corners */
+            ry: 2px;
         }
 
         .node:hover rect {
-            stroke-width: 1.5px;
-            stroke: #000;
+            stroke-width: 2px;
+            stroke: #007bff; /* Highlight stroke */
+            fill-opacity: 1;
         }
+
+        /* Specific Node Type Colors */
+        .node-type-agency rect { fill: #6f42c1; } /* Purple */
+        .node-type-prime rect { fill: #007bff; } /* Blue */
+        .node-type-sub rect { fill: #28a745; }  /* Green */
 
         .node text {
             pointer-events: none;
-            text-shadow: 0 1px 0 #fff;
-            fill: #222; /* Darker text for better contrast */
-            font-size: 10px;
+            fill: #343a40;
+            font-size: 11px; /* Slightly larger */
             font-weight: 500;
+            text-shadow: 0 1px 1px rgba(255,255,255,0.7); /* Subtle shadow */
         }
 
+        /* Link Styling */
         .link {
             fill: none;
-            stroke-opacity: 0.3; /* Default link opacity */
+            stroke-opacity: 0.35; /* Slightly more opaque */
             transition: stroke-opacity 0.2s ease;
         }
 
         .link:hover {
-            stroke-opacity: 0.6; /* Highlighted link opacity */
+            stroke-opacity: 0.7;
         }
 
+        /* Tooltip Styling */
         #tooltip {
             position: absolute;
-            background-color: rgba(0, 0, 0, 0.8);
+            background-color: rgba(40, 40, 40, 0.9); /* Darker tooltip */
             color: white;
-            padding: 8px 12px;
-            border-radius: 4px;
-            font-size: 12px;
-            pointer-events: none; /* Tooltip shouldn't block interactions */
+            padding: 10px 15px; /* More padding */
+            border-radius: 5px;
+            font-size: 13px; /* Larger font */
+            pointer-events: none;
             opacity: 0;
             transition: opacity 0.2s ease;
             white-space: nowrap;
             z-index: 10;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
 
         #tooltip.visible {
@@ -89,41 +102,38 @@
         }
 
         #tooltip h4 {
-            margin: 0 0 5px 0;
-            font-size: 13px;
+            margin: 0 0 8px 0; /* More space below title */
+            font-size: 14px;
+            border-bottom: 1px solid #666; /* Separator */
+            padding-bottom: 4px;
         }
 
         #tooltip p {
-            margin: 3px 0;
+            margin: 4px 0;
+        }
+        #tooltip strong {
+            color: #a2d2ff; /* Light blue for emphasis */
         }
 
         #loading {
             text-align: center;
             padding: 50px;
             font-size: 1.2em;
-            color: #666;
+            color: #6c757d; /* Gray color */
         }
 
-        /* Basic responsive adjustments */
+        /* Responsive adjustments */
         @media (max-width: 768px) {
-            body {
-                margin: 10px;
-            }
-            h1 {
-                font-size: 1.5em;
-            }
-            #chart-container {
-                height: 65vh;
-                min-height: 400px;
-            }
-             .node text {
-                font-size: 9px;
-            }
+            body { margin: 10px; }
+            h1 { font-size: 1.4em; }
+            #chart-container { height: 70vh; min-height: 450px; }
+            .node text { font-size: 10px; }
+            #tooltip { font-size: 12px; padding: 8px 12px; }
         }
     </style>
 </head>
 <body>
-    <h1>Sankey Diagram: Merged Contract Data Flow</h1>
+    <h1>Contract Flow: Agency → Prime → Subcontractor</h1>
     <div id="chart-container">
         <div id="loading">Loading data...</div>
         <div id="chart"></div>
@@ -134,16 +144,21 @@
         // --- Configuration ---
         const dataUrl = "testmanyrows_filtered.csv"; // Path to your merged CSV file
         const valueField = 'subaward_amount'; // Field containing the value for links
-        const nodeColorScale = d3.scaleOrdinal(d3.schemeCategory10); // Color scale for node types
+
+        // Define specific colors for the simplified hierarchy
+        const qbrColorScale = d3.scaleOrdinal()
+            .domain(['agency', 'prime', 'sub'])
+            .range(['#6f42c1', '#007bff', '#28a745']); // Purple, Blue, Green
 
         // --- Helper Functions ---
         function formatCurrency(value) {
             if (typeof value !== 'number' || isNaN(value)) return '$?';
+            // Use compact notation for large numbers in tooltips
+             if (Math.abs(value) >= 1e9) return `$${(value / 1e9).toFixed(1)}B`;
+             if (Math.abs(value) >= 1e6) return `$${(value / 1e6).toFixed(1)}M`;
+             if (Math.abs(value) >= 1e3) return `$${(value / 1e3).toFixed(0)}K`;
             return new Intl.NumberFormat('en-US', {
-                style: 'currency',
-                currency: 'USD',
-                minimumFractionDigits: 0,
-                maximumFractionDigits: 0
+                style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0
             }).format(value);
         }
 
@@ -159,98 +174,80 @@
             d3.select('#tooltip').classed('visible', false);
         }
 
-        // --- Data Processing ---
+        // --- Data Processing (Simplified for QBR) ---
         function processDataForSankey(data) {
-            console.log(`Processing ${data.length} rows for Sankey...`);
-            const nodesMap = new Map(); // Use Map for efficient node lookup { id -> nodeObject }
-            const linksMap = new Map(); // Use Map to aggregate link values { 'sourceId|targetId' -> linkObject }
+            console.log(`Processing ${data.length} rows for QBR Sankey...`);
+            const nodesMap = new Map(); // { id -> nodeObject }
+            const linksMap = new Map(); // { 'sourceId|targetId' -> linkObject }
 
             data.forEach(row => {
-                // Extract hierarchy levels - use fallback fields if primary is missing
+                // Extract key levels
                 const agencyName = row.prime_award_awarding_agency_name?.trim() || row.awarding_agency_name?.trim();
-                const subAgencyName = row.prime_award_awarding_sub_agency_name?.trim() || row.awarding_sub_agency_name?.trim();
-                const officeName = row.prime_award_awarding_office_name?.trim() || row.awarding_office_name?.trim();
                 const primeName = row.prime_awardee_name?.trim() || row.recipient_name?.trim();
                 const subName = row.subawardee_name?.trim(); // This might be null/empty
 
-                // Get the value for this specific row (subaward amount)
+                // Get the value (subaward amount represents the flow)
                 const value = parseFloat(String(row[valueField] || '0').replace(/[^0-9.-]+/g, '')) || 0;
 
-                // Skip row if essential hierarchy is missing or value is invalid/zero
-                // Only require subName if it's expected to exist (i.e., value > 0)
-                if (!agencyName || !subAgencyName || !officeName || !primeName || value <= 0 || !subName) {
-                    return; // Skip this row if it doesn't represent a valid subaward link
+                // Skip row if essential info is missing or value is invalid/zero
+                // Crucially, we need a subName for this simplified flow view
+                if (!agencyName || !primeName || !subName || value <= 0) {
+                    return; // Skip rows that don't represent a valid Agency -> Prime -> Sub link
                 }
 
-                // Define node IDs
+                // Define node IDs for the simplified hierarchy
                 const agencyId = `agency-${agencyName}`;
-                const subAgencyId = `subagency-${subAgencyName}`;
-                const officeId = `office-${officeName}`;
                 const primeId = `prime-${primeName}`;
                 const subId = `sub-${subName}`;
 
-                // Add/Update nodes (value aggregation isn't strictly needed for Sankey nodes, but can be useful)
+                // Add/Update nodes
                 if (!nodesMap.has(agencyId)) nodesMap.set(agencyId, { id: agencyId, name: agencyName, type: 'agency', value: 0 });
-                if (!nodesMap.has(subAgencyId)) nodesMap.set(subAgencyId, { id: subAgencyId, name: subAgencyName, type: 'subagency', value: 0 });
-                if (!nodesMap.has(officeId)) nodesMap.set(officeId, { id: officeId, name: officeName, type: 'office', value: 0 });
                 if (!nodesMap.has(primeId)) nodesMap.set(primeId, { id: primeId, name: primeName, type: 'prime', value: 0 });
                 if (!nodesMap.has(subId)) nodesMap.set(subId, { id: subId, name: subName, type: 'sub', value: 0 });
 
-                // Accumulate value on nodes if desired (optional for basic Sankey)
+                // Accumulate value onto nodes (represents total flow through that node)
                 nodesMap.get(agencyId).value += value;
-                nodesMap.get(subAgencyId).value += value;
-                nodesMap.get(officeId).value += value;
                 nodesMap.get(primeId).value += value;
                 nodesMap.get(subId).value += value;
 
-                // Add/Update links (aggregate value)
-                const linksToAdd = [
-                    { source: agencyId, target: subAgencyId, type: 'agencyToSub' },
-                    { source: subAgencyId, target: officeId, type: 'subToOffice' },
-                    { source: officeId, target: primeId, type: 'officeToPrime' },
-                    { source: primeId, target: subId, type: 'primeToSub' }
-                ];
+                // Add/Update links (Agency -> Prime and Prime -> Sub)
+                // Link 1: Agency -> Prime
+                const linkAPKey = `${agencyId}|${primeId}`;
+                if (!linksMap.has(linkAPKey)) {
+                    linksMap.set(linkAPKey, { source: agencyId, target: primeId, value: 0, type: 'agencyToPrime' });
+                }
+                linksMap.get(linkAPKey).value += value;
 
-                linksToAdd.forEach(linkInfo => {
-                    const linkKey = `${linkInfo.source}|${linkInfo.target}`;
-                    if (!linksMap.has(linkKey)) {
-                        linksMap.set(linkKey, {
-                            source: linkInfo.source,
-                            target: linkInfo.target,
-                            value: 0,
-                            type: linkInfo.type // Store link type if needed
-                        });
-                    }
-                    linksMap.get(linkKey).value += value;
-                });
+                // Link 2: Prime -> Sub
+                const linkPSKey = `${primeId}|${subId}`;
+                if (!linksMap.has(linkPSKey)) {
+                    linksMap.set(linkPSKey, { source: primeId, target: subId, value: 0, type: 'primeToSub' });
+                }
+                linksMap.get(linkPSKey).value += value;
             });
 
             const nodes = Array.from(nodesMap.values());
-            const links = Array.from(linksMap.values());
+            const links = Array.from(linksMap.values()).filter(l => l.value > 0); // Filter zero-value links
 
-            console.log(`Processed into ${nodes.length} nodes and ${links.length} links.`);
-            // Filter out nodes that might have ended up with zero value if necessary
-            // Filter out links with zero value
-            const finalNodes = nodes; //.filter(n => n.value > 0); // Keep all nodes for structure
-            const finalLinks = links.filter(l => l.value > 0);
+            console.log(`Processed into ${nodes.length} nodes and ${links.length} links (Agency->Prime->Sub).`);
 
-            // Ensure all nodes referenced by links exist in the nodes list
-            const finalNodeIds = new Set(finalNodes.map(n => n.id));
-            const validLinks = finalLinks.filter(l => finalNodeIds.has(l.source) && finalNodeIds.has(l.target));
+            // Ensure all nodes referenced by links exist
+            const finalNodeIds = new Set(nodes.map(n => n.id));
+            const validLinks = links.filter(l => finalNodeIds.has(l.source) && finalNodeIds.has(l.target));
 
-            console.log(`Final valid data: ${finalNodes.length} nodes, ${validLinks.length} links.`);
-            return { nodes: finalNodes, links: validLinks };
+            console.log(`Final valid data: ${nodes.length} nodes, ${validLinks.length} links.`);
+            return { nodes: nodes, links: validLinks };
         }
 
 
         // --- Drawing Function ---
         function drawSankeyDiagram(data) {
             const chartElement = d3.select('#chart');
-            chartElement.html(''); // Clear previous chart or loading message
+            chartElement.html(''); // Clear previous
 
             if (!data || !data.nodes || !data.links || data.nodes.length === 0 || data.links.length === 0) {
-                chartElement.html('<div id="loading">No data matches the criteria for the Sankey diagram.</div>');
-                console.warn("drawSankeyDiagram: No valid data to draw.");
+                chartElement.html('<div id="loading">No data available to display the Agency → Prime → Sub flow. Check if the source file contains subaward data.</div>');
+                console.warn("drawSankeyDiagram: No valid data for the simplified flow.");
                 return;
             }
 
@@ -258,13 +255,12 @@
             const containerRect = chartContainer.getBoundingClientRect();
             const width = containerRect.width;
             const height = containerRect.height;
-            const margin = { top: 20, right: 20, bottom: 20, left: 20 }; // Add some margins
+            const margin = { top: 25, right: 25, bottom: 25, left: 25 }; // Slightly larger margins
             const innerWidth = width - margin.left - margin.right;
             const innerHeight = height - margin.top - margin.bottom;
 
-            if (innerWidth <= 0 || innerHeight <= 0) {
+            if (innerWidth <= 10 || innerHeight <= 10) {
                 chartElement.html('<div id="loading">Chart container is too small.</div>');
-                console.error("Chart container invalid dimensions.");
                 return;
             }
 
@@ -276,16 +272,15 @@
 
             // Create Sankey layout generator
             const sankey = d3.sankey()
-                .nodeId(d => d.id) // Use the unique ID we created
-                .nodeWidth(15)
-                .nodePadding(10)
-                .nodeAlign(d3.sankeyLeft) // Align nodes to the left
+                .nodeId(d => d.id)
+                .nodeWidth(20) // Wider nodes
+                .nodePadding(15) // More padding
+                .nodeAlign(d3.sankeyJustify) // Justify alignment often looks good
                 .extent([[0, 0], [innerWidth, innerHeight]]);
 
             // Compute the Sankey layout
             let graph;
             try {
-                 // Need to deep copy data as sankey mutates it
                  const graphDataCopy = {
                      nodes: data.nodes.map(d => ({...d})),
                      links: data.links.map(d => ({...d}))
@@ -293,31 +288,48 @@
                 graph = sankey(graphDataCopy);
             } catch (e) {
                 console.error("Error calculating Sankey layout:", e);
-                chartElement.html(`<div id="loading">Error calculating layout: ${e.message}.</div>`);
+                chartElement.html(`<div id="loading">Layout Error: ${e.message}.</div>`);
                 return;
             }
 
-
             // --- Draw Links ---
+             // Create gradient definitions for links
+            const defs = svg.append("defs");
+            graph.links.forEach((link, i) => {
+                const gradientId = `link-gradient-${i}`;
+                const sourceColor = qbrColorScale(link.source.type) || '#ccc'; // Use QBR scale
+                const targetColor = qbrColorScale(link.target.type) || '#ccc'; // Use QBR scale
+                const gradient = defs.append("linearGradient")
+                    .attr("id", gradientId)
+                    .attr("gradientUnits", "userSpaceOnUse")
+                    .attr("x1", link.source.x1) // Start of link
+                    .attr("x2", link.target.x0); // End of link
+
+                gradient.append("stop").attr("offset", "0%").attr("stop-color", sourceColor);
+                gradient.append("stop").attr("offset", "100%").attr("stop-color", targetColor);
+                link.gradientId = gradientId; // Assign ID to link data
+            });
+
             const link = svg.append("g")
                 .attr("class", "links")
                 .attr("fill", "none")
-                .attr("stroke", "#aaa") // Default link color
+                // Links will use gradient stroke
                 .selectAll("path")
                 .data(graph.links)
                 .join("path")
                 .attr("class", "link")
                 .attr("d", d3.sankeyLinkHorizontal())
-                .attr("stroke-width", d => Math.max(1, d.width))
-                .style("stroke-opacity", 0.3) // Use style for opacity
-                .sort((a, b) => b.width - a.width) // Draw thicker links on top
+                .attr("stroke", d => `url(#${d.gradientId})`) // Apply gradient
+                .attr("stroke-width", d => Math.max(1.5, d.width)) // Slightly thicker base
+                .style("stroke-opacity", 0.4) // Adjusted opacity
+                .sort((a, b) => b.width - a.width)
                 .on("mouseover", function(event, d) {
-                    d3.select(this).style("stroke-opacity", 0.6);
-                    const content = `<h4>${d.source.name} → ${d.target.name}</h4><p>Value: ${formatCurrency(d.value)}</p>`;
+                    d3.select(this).style("stroke-opacity", 0.7);
+                    const content = `<h4>${d.source.name} → ${d.target.name}</h4><p><strong>Subaward Value:</strong> ${formatCurrency(d.value)}</p>`;
                     showTooltip(event, content);
                 })
                 .on("mouseout", function() {
-                    d3.select(this).style("stroke-opacity", 0.3);
+                    d3.select(this).style("stroke-opacity", 0.4);
                     hideTooltip();
                 });
 
@@ -331,46 +343,51 @@
                 .attr("transform", d => `translate(${d.x0},${d.y0})`);
 
             node.append("rect")
-                .attr("height", d => Math.max(0.5, d.y1 - d.y0)) // Ensure positive height
+                .attr("height", d => Math.max(1, d.y1 - d.y0)) // Min height 1px
                 .attr("width", d => d.x1 - d.x0)
-                .attr("fill", d => nodeColorScale(d.type)) // Color by node type
+                .attr("fill", d => qbrColorScale(d.type)) // Use QBR color scale
+                .attr("fill-opacity", 0.9)
                 .on("mouseover", function(event, d) {
-                    d3.select(this).attr("stroke", "#000"); // Add stroke on hover
-                    const content = `<h4>${d.name}</h4><p>Type: ${d.type}</p><p>Total Flow: ${formatCurrency(d.value)}</p>`;
+                    d3.select(this).attr("stroke", "#343a40").attr("stroke-width", 2);
+                    const content = `<h4>${d.name}</h4><p><strong>Type:</strong> ${d.type.charAt(0).toUpperCase() + d.type.slice(1)}</p><p><strong>Total Flow:</strong> ${formatCurrency(d.value)}</p>`;
                     showTooltip(event, content);
                 })
                 .on("mouseout", function() {
-                    d3.select(this).attr("stroke", "#555"); // Reset stroke
+                    d3.select(this).attr("stroke", "#ffffff").attr("stroke-width", 1); // Reset stroke
                     hideTooltip();
                 });
 
             // --- Add Node Labels ---
             node.append("text")
-                .attr("x", d => d.x0 < innerWidth / 2 ? 6 + (d.x1 - d.x0) : -6) // Position right or left
+                .attr("x", d => d.x0 < innerWidth / 2 ? 6 + (d.x1 - d.x0) : -6)
                 .attr("y", d => (d.y1 - d.y0) / 2)
                 .attr("dy", "0.35em")
                 .attr("text-anchor", d => d.x0 < innerWidth / 2 ? "start" : "end")
                 .text(d => d.name)
-                .filter(d => d.x0 < innerWidth / 2) // Filter for labels on the left
-                .attr("x", 6 + (d => d.x1 - d.x0)) // Adjust position for left-aligned labels
-                .attr("text-anchor", "start");
+                // Only add labels if the node height is sufficient
+                .filter(d => (d.y1 - d.y0) > 12) // Only add text if node height > 12px
+                .clone(true).lower() // Clone to create a white stroke for contrast
+                .attr("stroke-linejoin", "round")
+                .attr("stroke-width", 3)
+                .attr("stroke", "#fff");
 
-            console.log("Sankey diagram drawn.");
+
+            console.log("QBR Sankey diagram drawn.");
         }
 
         // --- Load Data and Initialize ---
         d3.csv(dataUrl)
             .then(loadedData => {
-                document.getElementById('loading').style.display = 'none'; // Hide loading message
+                document.getElementById('loading').style.display = 'none';
                 if (!loadedData || loadedData.length === 0) {
-                    throw new Error("CSV file loaded successfully, but it contains no data rows.");
+                    throw new Error("CSV file loaded, but contains no data.");
                 }
                 const processed = processDataForSankey(loadedData);
                 drawSankeyDiagram(processed);
             })
             .catch(error => {
                 console.error("Error loading or processing data:", error);
-                document.getElementById('loading').innerHTML = `Error loading data: ${error.message}. Please check the file path and format.`;
+                document.getElementById('loading').innerHTML = `Error: ${error.message}`;
                 document.getElementById('loading').style.color = 'red';
             });
 
@@ -379,13 +396,13 @@
         window.addEventListener('resize', () => {
             clearTimeout(resizeTimer);
             resizeTimer = setTimeout(() => {
-                 d3.csv(dataUrl).then(loadedData => { // Reload data on resize for simplicity
+                 d3.csv(dataUrl).then(loadedData => {
                      if (loadedData && loadedData.length > 0) {
                         const processed = processDataForSankey(loadedData);
                         drawSankeyDiagram(processed);
                      }
                  }).catch(e => console.error("Resize redraw error:", e));
-             }, 250); // Debounce resize event
+             }, 300); // Slightly longer debounce
          });
 
     </script>

@@ -516,7 +516,7 @@
 
              data.forEach(row => {
                   // *** Use 'awarding_agency_name' or 'funding_agency_name' ***
-                  const agency = row.awarding_agency_name?.trim() || row.funding_agency_name?.trim();
+                  const agency = row.awarding_sub_agency_name?.trim() || row.funding_sub_agency_name?.trim();
                   if (agency) agencySet.add(agency);
 
                   // *** Use 'naics_code' and 'naics_description' ***

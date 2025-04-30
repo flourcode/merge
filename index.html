@@ -1,1070 +1,629 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Subhoo - Filtered Sankey View</title> {/* Updated Title */}
-
-    <meta name="description" content="Subhoo provides 100% free teaming intelligence for federal sales and BD professionals. Explore active subcontracting relationships and total deal flow data from USASpending.gov.">
-    <meta name="keywords" content="federal contracting, subcontractor intelligence, USASpending, government contracts, prime contractors, federal sales, business development, sankey diagram">
-    <meta name="robots" content="index, follow">
-    <link rel="canonical" href="https://subhoo.com/"> <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="preconnect" href="https://www.googletagmanager.com">
-    <link rel="preconnect" href="https://d3js.org">
-    <link rel="preconnect" href="https://cdn.jsdelivr.net">
-    <link rel="preconnect" href="https://unpkg.com">
-
-    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
-    <link rel="manifest" href="/site.webmanifest">
-    <meta name="theme-color" content="#252327" class="theme-color">
-
-    <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://subhoo.com/" />
-    <meta property="og:title" content="Subhoo - Federal SubContractor Intelligence" />
-    <meta property="og:description" content="100% free teaming intelligence for federal sales and BD professionals. Explore active subcontracting relationships and total deal flow data from USASpending.gov." />
-    <meta property="og:image" content="https://subhoo.com/subhoo.png">
-    <meta property="og:locale" content="en_US">
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Subhoo - Federal SubContractor Intelligence" />
-    <meta name="twitter:description" content="100% free teaming intelligence for federal sales and BD professionals. Explore active subcontracting relationships and total deal flow." />
-    <meta name="twitter:image" content="https://subhoo.com/subhoo.png" />
-
-    <meta http-equiv="X-Content-Type-Options" content="nosniff">
-
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Outfit:wght@700;800&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
-
-
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QBR Sales Performance Charts</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://d3js.org/d3.v7.min.js"></script>
-    <script src="https://unpkg.com/d3-sankey@0.12.3/dist/d3-sankey.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
-    <script src="https://unpkg.com/topojson@3"></script>
-
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/date-fns@2.30.0/cdn.min.js"></script>
 
     <style>
-        /* Base styles from subhoo.com (simplified for example) */
-        :root {
-            --color-primary: #6f42c1; /* Example primary color */
-            --color-surface: #ffffff;
-            --color-surface-container: #f8f9fa;
-            --color-surface-container-high: #e9ecef;
-            --color-on-surface: #212529;
-            --color-on-surface-variant: #495057;
-            --color-outline-variant: #ced4da;
-            --app-accent-color: #007bff; /* Example accent */
-            --accent-dark: #0056b3;
-            --font-primary: 'Poppins', sans-serif;
-            --font-display: 'Outfit', sans-serif;
-            --font-mono: 'Roboto Mono', monospace;
-             /* Sankey/Node specific colors */
-            --sankey-node-agency: #663399;
-            --sankey-node-subagency: #8A2BE2;
-            --sankey-node-office: #007bff;
-            --sankey-node-prime: #17a2b8;
-            --sankey-node-sub: #28a745;
-            --sankey-node-stroke: #ffffff;
-            --sankey-node-label-fill: #343a40;
-            --sankey-link-color: #ccc; /* Fallback link color */
-            --sankey-link-opacity: 0.3;
-
-            /* Material Design System colors (example subset) */
-             --md-sys-color-primary-container: #eaddff;
-             --md-sys-color-on-primary-container: #21005d;
-             --md-sys-color-error-container: #f9dedc;
-             --md-sys-color-on-error-container: #410e0b;
-             --md-sys-elevation-2: 0px 1px 2px 0px rgba(0, 0, 0, 0.3), 0px 1px 3px 1px rgba(0, 0, 0, 0.15);
-        }
-
+        /* Custom styles */
         body {
-            font-family: var(--font-primary);
-            margin: 0;
-            padding: 0;
-            background-color: var(--color-surface-container);
-            color: var(--color-on-surface);
-            line-height: 1.6;
+            font-family: 'Inter', sans-serif;
         }
-        body.light-mode {
-             /* Add light mode overrides if needed */
-             --color-surface: #f8f9fa;
-             --color-surface-container: #ffffff;
-             --color-surface-container-high: #f1f3f5;
-             --color-on-surface: #212529;
-             --color-on-surface-variant: #495057;
-             --sankey-node-stroke: #e9ecef;
-             --sankey-node-label-fill: #212529;
+        .chart-container {
+            min-height: 350px; /* Ensure containers have some height */
+            position: relative;
+            overflow-x: auto; /* Allow horizontal scroll for tables */
         }
-
-        .container {
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-        }
-
-        .app-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px 25px;
-            background-color: var(--color-surface);
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        }
-        .app-header h1 { font-family: var(--font-display); font-size: 2rem; margin: 0; }
-        .app-header h1 a { color: inherit; text-decoration: none; }
-        .app-header p { font-size: 0.9rem; margin: 0; color: var(--color-on-surface-variant); }
-        .app-header .controls { display: flex; gap: 10px; }
-
-        .active-filters-display {
-            padding: 10px 25px;
-            background-color: var(--color-surface-container-high);
-            border-bottom: 1px solid var(--color-outline-variant);
-            font-size: 0.9rem;
-        }
-        .agency-filter-title { font-size: 1.1rem; margin: 0 0 5px 0; font-weight: 600; }
-        .prime-data-badge { background-color: var(--app-accent-color); color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; margin-left: 8px; vertical-align: middle; }
-        .other-filters { display: flex; flex-wrap: wrap; gap: 5px 15px; color: var(--color-on-surface-variant); }
-        .filter-item strong { color: var(--color-on-surface); font-weight: 500; }
-        .filter-separator { color: var(--color-outline-variant); }
-
-        .breadcrumb-area { padding: 8px 25px; font-size: 0.85rem; background-color: var(--color-surface); border-bottom: 1px solid var(--color-outline-variant); }
-        .breadcrumb-area a { color: var(--app-accent-color); text-decoration: none; }
-        .breadcrumb-area span { color: var(--color-on-surface-variant); }
-        .breadcrumb-area .separator { margin: 0 5px; }
-
-        .stats-cards {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 15px;
-            padding: 20px 25px;
-        }
-        .stats-card {
-            background-color: var(--color-surface);
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-        }
-        .stats-card h4 { margin: 0 0 10px 0; font-size: 0.9rem; color: var(--color-on-surface-variant); font-weight: 500; }
-        .stats-card p { font-size: 1.5rem; font-weight: 700; margin: 0; color: var(--color-primary); }
-        .stats-chart-container { height: 130px; /* Fixed height for small charts */ position: relative; } /* Needed for placeholders */
-        .chart-placeholder { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: var(--color-on-surface-variant); font-style: italic; font-size: 0.9em; }
-
-        .dashboard-core {
-            display: flex;
-            flex-grow: 1;
-            padding: 0 25px 20px 25px;
-            gap: 20px;
-        }
-
-        .visualization-container {
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-            min-width: 0; /* Prevent flex item overflow */
-        }
-        .visualization {
-            flex-grow: 1;
-            position: relative; /* For loading overlay */
-            background-color: var(--color-surface);
-            border-radius: 8px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-            min-height: 450px; /* Ensure minimum height */
-        }
-        .viz-panel { display: none; width: 100%; height: 100%; }
-        .viz-panel.active { display: block; }
-
-        .legend {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 15px;
-            padding: 10px 0;
-            font-size: 0.8rem;
-        }
-        .legend-item { display: flex; align-items: center; gap: 5px; }
-        .legend-color { width: 12px; height: 12px; border-radius: 3px; border: 1px solid var(--color-outline-variant); }
-
-        .sidebar {
-            width: 280px;
-            flex-shrink: 0;
-            background-color: var(--color-surface);
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-            overflow-y: auto;
-        }
-        .filter-section { margin-bottom: 15px; }
-        .filter-section h3 { font-size: 1rem; margin: 0 0 10px 0; color: var(--color-primary); border-bottom: 1px solid var(--color-outline-variant); padding-bottom: 5px; }
-        .filter-row { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px; }
-        .filter-column { flex: 1; min-width: calc(50% - 5px); }
-        .filter-column.full-width { min-width: 100%; flex-basis: 100%; }
-        .sidebar label { display: block; font-size: 0.8rem; margin-bottom: 4px; color: var(--color-on-surface-variant); }
-        .filter-select, .sidebar input[type="search"], .sidebar input[type="range"] { width: 100%; box-sizing: border-box; padding: 8px; border: 1px solid var(--color-outline-variant); border-radius: 4px; font-size: 0.9rem; background-color: var(--color-surface); color: var(--color-on-surface); }
-        .search-container { position: relative; }
-        .search-clear-btn { /* Styles added via JS */ }
-        .range-inputs { display: flex; align-items: center; gap: 8px; }
-        .range-value { font-weight: 500; font-size: 0.9rem; color: var(--color-primary); }
-        .btn-group { display: flex; flex-wrap: wrap; gap: 5px; }
-        .btn { padding: 6px 10px; border: 1px solid var(--color-outline-variant); background-color: var(--color-surface); color: var(--color-on-surface); border-radius: 15px; font-size: 0.8rem; cursor: pointer; transition: background-color 0.2s ease; text-align: center; }
-        .btn.active, .btn:hover { background-color: var(--color-primary); color: white; border-color: var(--color-primary); }
-        .btn.icon-btn { padding: 6px; line-height: 1; }
-        .reset-btn { background-color: var(--color-surface-container-high); color: var(--color-on-surface-variant); width: 100%; margin-top: 10px; }
-        .reset-btn:hover { background-color: var(--color-primary); color: white; }
-        .visualization-toggle { display: flex; border: 1px solid var(--color-outline-variant); border-radius: 20px; overflow: hidden; }
-        .viz-toggle-btn { flex: 1; padding: 8px 5px; background-color: var(--color-surface); color: var(--color-on-surface-variant); border: none; border-left: 1px solid var(--color-outline-variant); font-size: 0.85rem; cursor: pointer; transition: background-color 0.2s ease, color 0.2s ease; }
-        .viz-toggle-btn:first-child { border-left: none; }
-        .viz-toggle-btn.active { background-color: var(--color-primary); color: white; }
-
-        .info-panel { /* Styles from subhoo */ }
-        .data-table-section { /* Styles from subhoo */ }
-        .analysis-section { /* Styles from subhoo */ }
-        .footer { /* Styles from subhoo */ }
-        .tooltip { /* Styles from subhoo */ }
-
-        /* Sankey Specific Styles (Merged) */
-        .node rect { cursor: pointer; shape-rendering: crispEdges; stroke: var(--sankey-node-stroke); stroke-width: 1px; transition: fill-opacity 0.2s ease, stroke-width 0.2s ease, stroke 0.2s ease; rx: 2px; ry: 2px; }
-        .node:hover rect { stroke-width: 2px; stroke: var(--app-accent-color); fill-opacity: 1; }
-        .node-type-agency rect { fill: var(--sankey-node-agency); }
-        .node-type-subagency rect { fill: var(--sankey-node-subagency); }
-        .node-type-office rect { fill: var(--sankey-node-office); }
-        .node-type-prime rect { fill: var(--sankey-node-prime); }
-        .node-type-sub rect { fill: var(--sankey-node-sub); }
-        .node text { pointer-events: none; fill: var(--sankey-node-label-fill); font-size: 10px; font-weight: 500; text-shadow: 0 1px 1px rgba(255,255,255,0.7); }
-        .link { fill: none; stroke-opacity: var(--sankey-link-opacity); transition: stroke-opacity 0.2s ease; }
-        .link:hover { stroke-opacity: 0.6; }
-
-        #tooltip { /* Combined tooltip styles */
-            position: absolute; background-color: rgba(40, 40, 40, 0.9); color: white; padding: 10px 15px; border-radius: 5px; font-size: 13px; pointer-events: none; opacity: 0; transition: opacity 0.2s ease; white-space: nowrap; z-index: 10; box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-        }
-        #tooltip.visible { opacity: 1; }
-        #tooltip h4 { margin: 0 0 8px 0; font-size: 14px; border-bottom: 1px solid #666; padding-bottom: 4px; }
-        #tooltip p { margin: 4px 0; }
-        #tooltip strong { color: #a2d2ff; }
-
-        #loading { /* Combined loading styles */
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; padding: 50px; font-size: 1.2em; color: #6c757d; z-index: 5;
-        }
-        .spinner { /* Add spinner styles if needed */ }
-
-        .visually-hidden { /* Accessibility helper */
+        .loading-placeholder, .error-placeholder, .no-data-placeholder {
             position: absolute;
-            width: 1px;
-            height: 1px;
-            padding: 0;
-            margin: -1px;
-            overflow: hidden;
-            clip: rect(0, 0, 0, 0);
-            white-space: nowrap;
-            border: 0;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: #6b7280; /* gray-500 */
+            padding: 20px;
         }
-         /* Add other necessary styles from style.css here */
-
+        /* Style for table */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+        th, td {
+            padding: 10px 14px; /* Increased padding */
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb; /* gray-200 */
+            white-space: nowrap; /* Prevent wrapping */
+        }
+        th {
+            background-color: #f9fafb; /* gray-50 */
+            font-weight: 600;
+            font-size: 0.875rem; /* text-sm */
+            color: #374151; /* gray-700 */
+            position: sticky; /* Make header sticky */
+            top: 0; /* Stick to the top */
+            z-index: 10;
+        }
+         tbody tr:nth-child(even) {
+             background-color: #f9fafb; /* gray-50 for zebra striping */
+         }
+        tbody tr:hover {
+            background-color: #f3f4f6; /* gray-100 */
+        }
+        td.number {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+        /* Simple spinner */
+        .spinner {
+            border: 4px solid #f3f4f6; /* gray-100 */
+            border-top: 4px solid #3b82f6; /* blue-500 */
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        /* Filter styling */
+        .filter-container label {
+            margin-right: 0.5rem;
+            font-weight: 500;
+            color: #4b5563; /* gray-600 */
+        }
+        .filter-container select, .filter-container input[type="date"] {
+            padding: 0.5rem;
+            border: 1px solid #d1d5db; /* gray-300 */
+            border-radius: 0.375rem; /* rounded-md */
+            margin-right: 1rem;
+            min-width: 150px;
+        }
+        .filter-container button {
+            padding: 0.5rem 1rem;
+            background-color: #3b82f6; /* blue-500 */
+            color: white;
+            border: none;
+            border-radius: 0.375rem; /* rounded-md */
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .filter-container button:hover {
+            background-color: #2563eb; /* blue-600 */
+        }
+        #arr-result {
+            font-size: 1.5rem; /* text-2xl */
+            font-weight: 700; /* font-bold */
+            color: #1d4ed8; /* blue-700 */
+        }
     </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
-<body>
-    <div class="container">
-        <header class="app-header">
-            <div class="title-section">
-                <h1><a href="#">Subhoo.</a></h1> {/* Link removed for simplicity */}
-                <p>Subcontractor Intelligence</p>
-            </div>
-            <div class="controls">
-                {/* Share and Theme buttons can be added back if needed */}
-                 <button id="theme-toggle" class="btn icon-btn" aria-label="Switch Theme" title="Switch Theme">
-                     <span class="material-symbols-outlined" aria-hidden="true">light_mode</span>
-                 </button>
-            </div>
-        </header>
+<body class="bg-gray-100 p-6 md:p-10">
 
-        <section class="active-filters-display" id="active-filters" aria-live="polite">
-            <h2 class="agency-filter-title">Merged Data View</h2>
-            <div class="other-filters">
-                <span class="filter-item"><span class="filter-label">Loading filters...</span></span>
-            </div>
-        </section>
+    <h1 class="text-3xl font-bold text-center text-gray-800 mb-10">Sales QBR Dashboard</h1>
 
-        <nav id="breadcrumb" class="breadcrumb-area visually-hidden" aria-label="Drilldown Path" aria-hidden="true">
-            <a href="#" data-action="reset">All Data</a>
-        </nav>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
 
-        <section class="stats-cards" aria-label="Summary Statistics">
-             <div class="stats-card">
-                 <h4>Contract Value</h4>
-                 <p id="total-value">$0</p>
-             </div>
-             <div class="stats-card">
-                 <h4 id="prime-chart-title">Top Primes (Filtered Value)</h4>
-                 <div id="top-primes-bar-chart" class="stats-chart-container" role="img" aria-labelledby="prime-chart-title">
-                     <span class="chart-placeholder">Loading...</span>
-                 </div>
-             </div>
-             <div class="stats-card">
-                 <h4 id="sub-chart-title">Top Subs (Filtered Value)</h4>
-                 <div id="top-subs-bar-chart" class="stats-chart-container" role="img" aria-labelledby="sub-chart-title">
-                     <span class="chart-placeholder">Loading...</span>
-                 </div>
-             </div>
-             <div class="stats-card">
-                 <h4>NAICS Distribution</h4>
-                 <div id="naics-donut-chart" class="stats-chart-container" role="img" aria-label="Donut chart showing NAICS distribution">
-                     <span class="chart-placeholder">Loading...</span>
-                 </div>
-             </div>
-         </section>
-
-
-        <main class="dashboard-core">
-            <div class="visualization-container">
-                <div class="visualization">
-                    <div id="chart" class="viz-panel active" data-viz="sankey" role="region" aria-label="Sankey diagram showing contract flows"></div>
-                    <div id="network-chart" class="viz-panel" data-viz="network" role="region" aria-label="Network graph showing entity relationships"></div>
-                    <div id="map-chart" class="viz-panel" data-viz="choropleth" role="region" aria-label="Map showing place of performance"></div>
-
-                    <div id="loading" class="loading" aria-hidden="true" style="display: flex;"> {/* Show loading initially */}
-                        <div class="spinner" role="status" aria-label="Loading data"></div>
-                        <span>Loading data...</span>
-                    </div>
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <h2 class="text-xl font-semibold text-gray-700 mb-4">Contract Type Leaders (by Prime)</h2>
+            <div id="contract-leaders-table-container" class="chart-container">
+                <div class="loading-placeholder">
+                    <div class="spinner"></div>
+                    Loading Leader Data...
                 </div>
-                 <div class="legend" id="legend" aria-label="Chart Legend">
-                      </div>
-                 <div id="insights-display" class="insights-container" aria-live="polite" aria-atomic="true">
-                     <h4>Quick Insights</h4>
-                     <ul id="insights-list">
-                         <li class="placeholder">Generating insights...</li>
-                     </ul>
-                 </div>
+                </div>
+        </div>
 
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <h2 class="text-xl font-semibold text-gray-700 mb-4">TAV vs TCV Tracker (Top 5 Contracts by TCV)</h2>
+            <p class="text-sm text-gray-500 mb-3">Assuming TAV = Total Obligated, TCV = Current Total Value</p>
+            <div id="tav-tcv-chart-container" class="chart-container">
+                 <div class="loading-placeholder">
+                    <div class="spinner"></div>
+                    Loading TAV/TCV Data...
+                </div>
+                <canvas id="tavTcvChart"></canvas>
             </div>
+        </div>
 
-            <aside class="sidebar" aria-labelledby="filters-heading">
-                <h2 id="filters-heading" class="visually-hidden">Filter Panel</h2>
+    </div>
 
-                 <section class="filter-section">
-                     <div class="filter-group viz-section">
-                         <h3>Chart Type</h3>
-                         <nav class="visualization-toggle" aria-label="Visualization type">
-                             <button class="viz-toggle-btn active" data-viz="sankey" aria-pressed="true">Contract Flow</button>
-                             <button class="viz-toggle-btn" data-viz="network" aria-pressed="false">Network</button>
-                             <button class="viz-toggle-btn" data-viz="choropleth" aria-pressed="false">Map</button>
-                         </nav>
-                     </div>
-                 </section>
-
-                 <section class="filter-section" aria-labelledby="agency-select-heading">
-                     <h3>Agency Filters</h3>
-                     <div class="filter-row">
-                         <div class="filter-column">
-                             <label for="agency-selector">Agency:</label>
-                             <select id="agency-selector" class="filter-select" aria-label="Filter by Funding Agency">
-                                 <option value="">All Agencies (in file)</option>
-                                 </select>
-                         </div>
-                         <div class="filter-column">
-                             <label for="office-filter">Office:</label>
-                             <select id="office-filter" class="filter-select" aria-label="Filter by Office">
-                                 <option value="">All Offices</option>
-                                 </select>
-                         </div>
-                          </div>
-                 </section>
-
-                 <section class="filter-section" aria-labelledby="optional-filters-heading">
-                     <h3 id="optional-filters-heading">Optional Filters</h3>
-                     <div class="filter-row">
-                         <div class="filter-column">
-                             <label for="prime-filter">Prime Contractor:</label>
-                             <select id="prime-filter" class="filter-select" aria-label="Filter by Prime Contractor">
-                                <option value="">All Primes</option>
-                                </select>
-                         </div>
-                         <div class="filter-column">
-                             <label for="naics-filter">NAICS Code:</label>
-                             <select id="naics-filter" class="filter-select" aria-label="Filter by NAICS Code">
-                                <option value="">All NAICS</option>
-                                </select>
-                         </div>
-                          <div class="filter-column">
-                             <label for="sub-filter">Subcontractor:</label>
-                             <select id="sub-filter" class="filter-select" aria-label="Filter by Subcontractor">
-                                 <option value="">All Subs</option>
-                                 </select>
-                         </div>
-                     </div>
-                 </section>
-
-                 <section class="filter-section" data-section="search" aria-labelledby="search-filter-heading">
-                     <h3>Search</h3>
-                     <div class="filter-row">
-                         <div class="filter-column full-width">
-                             <label for="data-search" class="visually-hidden">Keyword search:</label>
-                             <div class="search-container">
-                                 <input type="search" id="data-search" class="filter-select" placeholder="Search name, NAICS..." aria-label="Search contract data">
-                                 {/* Clear button added by JS */}
-                             </div>
-                         </div>
-                     </div>
-                 </section>
-
-                 <section class="filter-section">
-                     <div class="filter-group viz-section">
-                         <h3>Visible Node Levels</h3>
-                         <div class="btn-group" id="level-filters" role="group" aria-label="Visible node levels">
-                             <button class="btn active" data-level="agency" aria-pressed="true">Agency</button>
-                             <button class="btn active" data-level="subagency" aria-pressed="true">Dept</button>
-                             <button class="btn active" data-level="office" aria-pressed="true">Office</button>
-                             <button class="btn active" data-level="prime" aria-pressed="true">Prime</button>
-                             <button class="btn active" data-level="sub" aria-pressed="true">Sub</button>
-                         </div>
-                     </div>
-                 </section>
-
-                 <section class="filter-section">
-                     <h3>Value / Count Filters</h3>
-                      <div class="filter-row">
-                          <div class="filter-column">
-                              <div class="filter-group" id="min-value-group">
-                                  <label for="min-value-slider">Min Subaward Value: <span id="min-value-display">$0K</span></label>
-                                  <input type="range" id="min-value-slider" name="min-value" min="0" max="1000000" step="50000" value="0">
-                              </div>
-                          </div>
-                          <div class="filter-column">
-                              <div class="filter-group">
-                                  <label for="top-n-select">Show Contracts:</label>
-                                  <select id="top-n-select" name="top-n" class="filter-select">
-                                      <option value="0">Show All</option>
-                                      <option value="10">Top 10</option>
-                                      <option value="20">Top 20</option>
-                                      <option value="50">Top 50</option>
-                                      <option value="100">Top 100</option>
-                                  </select>
-                              </div>
-                          </div>
-                      </div>
-                 </section>
-
-                 <section class="filter-section">
-                     <button id="reset-filters" class="reset-btn btn">Reset all filters</button>
-                 </section>
-            </aside>
-        </main>
-
-         <div class="info-panel" id="info-panel" role="dialog" aria-modal="true" aria-labelledby="info-panel-title" aria-hidden="true" inert>
-             <button class="info-panel-close icon-btn" id="info-panel-close" aria-label="Close details panel">
-                 <span class="material-symbols-outlined" aria-hidden="true">close</span>
-             </button>
-             <h3 id="info-panel-title">Entity Details</h3>
-             <dl id="info-panel-content"></dl>
-             <a href="#" class="external-link" id="info-panel-link" target="_blank" rel="noopener noreferrer">
-                 View on USAspending.gov
-                 <span class="material-symbols-outlined" aria-hidden="true">open_in_new</span>
-             </a>
-         </div>
-
-         <div class="tooltip" id="tooltip" role="tooltip" aria-hidden="true"></div>
-
-         <footer class="footer">
-             {/* Simplified footer content */}
-             <div class="footer-bottom">
-                 <p>&copy; 2025 Subhoo | Data from USAspending.gov (Processed)</p>
-                 {/* Add relevant links back if needed */}
+    <div class="bg-white p-6 rounded-lg shadow-md mb-10">
+        <h2 class="text-xl font-semibold text-gray-700 mb-4">ARR Estimator (Based on Historical Data)</h2>
+        <div class="filter-container flex flex-wrap items-center gap-4 mb-6">
+            <div>
+                <label for="arr-agency-filter">Agency:</label>
+                <select id="arr-agency-filter">
+                    <option value="">All Agencies</option>
+                    </select>
+            </div>
+            <div>
+                <label for="arr-naics-filter">NAICS:</label>
+                <select id="arr-naics-filter">
+                    <option value="">All NAICS</option>
+                    </select>
+            </div>
+            <div>
+                <label for="arr-start-date">Start Date:</label>
+                <input type="date" id="arr-start-date">
+            </div>
+            <div>
+                <label for="arr-end-date">End Date:</label>
+                <input type="date" id="arr-end-date">
+            </div>
+            <div>
+                <button id="arr-calculate-button">Calculate Avg. ARR</button>
+            </div>
+        </div>
+        <div class="text-center">
+            <span class="text-gray-600">Estimated Average Annual Recurring Revenue (ARR):</span>
+            <div id="arr-result" class="mt-2">--</div>
+             <div id="arr-loading" class="loading-placeholder" style="display: none;">
+                 <div class="spinner"></div>
+                 Calculating ARR...
              </div>
-         </footer>
-
-    </div> {/* End .container */}
+             <div id="arr-error" class="error-placeholder text-red-600" style="display: none;"></div>
+             <div id="arr-no-data" class="no-data-placeholder" style="display: none;">No contracts match the selected criteria.</div>
+        </div>
+    </div>
 
 
     <script>
-        // --- Global Variables ---
-        const dataUrl = "testmanyrows_filtered.csv"; // *** YOUR MERGED FILE ***
-        const valueField = 'subaward_amount';
-        const qbrColorScale = d3.scaleOrdinal()
-            .domain(['agency', 'subagency', 'office', 'prime', 'sub'])
-            .range(['#663399', '#8A2BE2', '#007bff', '#17a2b8', '#28a745']);
+        const DATA_URL = 'testmanyrows_filtered.csv';
+        let rawData = []; // To store loaded data
 
-        let rawData = []; // Holds the raw loaded data
-        let processedData = null; // Holds the structured data for visualizations
-        let currentVizType = 'sankey'; // Default viz
-        let currentMinValue = 0;
-        let currentTopN = 0; // 0 means show all
-        let currentAgencyFilter = ''; // Filter state
-        let currentOfficeFilter = '';
-        let currentPrimeFilter = '';
-        let currentSubFilter = '';
-        let currentNaicsFilter = '';
-        let currentSearchTerm = '';
-        let activeLevels = ['agency', 'subagency', 'office', 'prime', 'sub']; // Default active levels
-        let currentFocusNode = null; // For drilldown
-        let currentMapFocusState = null; // For map interaction
+        // --- Utility Functions ---
+        function formatCurrency(value) {
+            if (value === null || value === undefined || isNaN(Number(value))) return '$ -';
+            return Number(value).toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 });
+        }
 
-        let minValueDebounceTimer;
-        let resizeTimer;
-        let searchDebounceTimeout;
-
-        // --- DOM Elements ---
-        const minValueSlider = document.getElementById('min-value-slider');
-        const minValueDisplay = document.getElementById('min-value-display');
-        const topNSelect = document.getElementById('top-n-select');
-        const loadingDiv = document.getElementById('loading');
-        const chartDiv = d3.select('#chart'); // Main viz area (Sankey initially)
-        const networkChartDiv = d3.select('#network-chart');
-        const mapChartDiv = d3.select('#map-chart');
-        const tooltipDiv = d3.select('#tooltip');
-        const agencySelector = document.getElementById('agency-selector');
-        const officeSelector = document.getElementById('office-filter');
-        const primeSelector = document.getElementById('prime-filter');
-        const subSelector = document.getElementById('sub-filter');
-        const naicsSelector = document.getElementById('naics-filter');
-        const searchInput = document.getElementById('data-search');
-        const levelButtons = document.querySelectorAll('#level-filters button');
-        const vizToggleButtons = document.querySelectorAll('.viz-toggle-btn');
-        const resetButton = document.getElementById('reset-filters');
-        const breadcrumbNav = document.getElementById('breadcrumb');
-        const infoPanel = document.getElementById('info-panel');
-        const infoPanelClose = document.getElementById('info-panel-close');
-        const activeFiltersContainer = document.getElementById('active-filters');
-        const legendContainer = document.getElementById('legend');
-
-
-        // --- Helper Functions ---
-        function formatCurrency(value, useSuffix = true) {
-            if (typeof value !== 'number' || isNaN(value)) return '$?';
-            if (useSuffix) {
-                if (Math.abs(value) >= 1e9) return `$${(value / 1e9).toFixed(1)}B`;
-                if (Math.abs(value) >= 1e6) return `$${(value / 1e6).toFixed(1)}M`;
-                if (Math.abs(value) >= 1e3) return `$${(value / 1e3).toFixed(0)}K`;
+        function parseDate(dateString) {
+            if (!dateString || typeof dateString !== 'string') return null;
+            try {
+                // Handle YYYY-MM-DD format primarily
+                if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                     // Important: Add time to avoid timezone issues with just date
+                    return new Date(dateString + 'T00:00:00');
+                }
+                // Add other common formats if needed
+                // const date = new Date(dateString);
+                const date = dateFns.parseISO(dateString); // Using date-fns if available
+                return isNaN(date.getTime()) ? null : date;
+            } catch (e) {
+                console.warn(`Could not parse date: ${dateString}`, e);
+                return null;
             }
-            return new Intl.NumberFormat('en-US', {
-                style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0
-            }).format(value);
         }
-        function showTooltip(event, content) {
-             tooltipDiv.html(content)
-                .style('left', (event.pageX + 15) + 'px')
-                .style('top', (event.pageY - 10) + 'px')
-                .classed('visible', true);
+
+        function calculateDurationDays(startDateStr, endDateStr) {
+            const start = parseDate(startDateStr);
+            const end = parseDate(endDateStr);
+            if (!start || !end || end < start) return 0;
+            // Use date-fns for accurate difference calculation
+            // return dateFns.differenceInDays(end, start) + 1; // Inclusive
+             const diffTime = Math.abs(end - start);
+             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) +1; // Inclusive
+             return diffDays;
         }
-        function hideTooltip() {
-             tooltipDiv.classed('visible', false);
+
+        function setLoading(containerId, isLoading, message = 'Loading...') {
+             const container = document.getElementById(containerId);
+             if (!container) return;
+             let placeholder = container.querySelector('.loading-placeholder');
+             if (isLoading) {
+                 if (!placeholder) {
+                     placeholder = document.createElement('div');
+                     placeholder.className = 'loading-placeholder';
+                     container.appendChild(placeholder);
+                 }
+                 placeholder.innerHTML = `<div class="spinner"></div>${message}`;
+                 placeholder.style.display = 'block';
+             } else {
+                 if (placeholder) {
+                     placeholder.style.display = 'none';
+                 }
+             }
+         }
+
+         function displayError(containerId, message) {
+             const container = document.getElementById(containerId);
+             if (!container) return;
+             // Clear previous content/loading
+             container.innerHTML = '';
+             let errorPlaceholder = container.querySelector('.error-placeholder');
+              if (!errorPlaceholder) {
+                     errorPlaceholder = document.createElement('div');
+                     errorPlaceholder.className = 'error-placeholder text-red-600'; // Add Tailwind color
+                     container.appendChild(errorPlaceholder);
+                 }
+             errorPlaceholder.textContent = message;
+             errorPlaceholder.style.display = 'block';
+              // Hide loading if it was visible
+             setLoading(containerId, false);
+         }
+
+         function displayNoData(containerId, message = "No data available for this view.") {
+             const container = document.getElementById(containerId);
+             if (!container) return;
+             container.innerHTML = `<div class="no-data-placeholder">${message}</div>`;
+             setLoading(containerId, false); // Hide loading
+         }
+
+
+        // --- Chart 1: Contract Type Leaders ---
+        function processContractLeaders(data) {
+            console.log("Processing Contract Leaders data...");
+            const leaders = d3.group(data, d => d.prime_awardee_name); // Group by prime name
+
+            const leaderData = Array.from(leaders, ([primeName, contracts]) => {
+                if (!primeName) return null; // Skip if prime name is missing
+
+                const validContracts = contracts.filter(c => c.prime_award_unique_key); // Ensure contracts have a unique key
+
+                if (validContracts.length === 0) return null;
+
+                // Calculate Avg Value
+                const values = validContracts.map(c => parseFloat(c.current_total_value_of_award || c.base_and_exercised_options_value || 0)).filter(v => !isNaN(v));
+                const avgValue = values.length > 0 ? d3.mean(values) : 0;
+
+                // Calculate Avg Duration
+                const durations = validContracts.map(c => calculateDurationDays(c.period_of_performance_start_date, c.period_of_performance_current_end_date)).filter(d => d > 0);
+                const avgDurationDays = durations.length > 0 ? d3.mean(durations) : 0;
+
+                // Infer Dominant Type (Simplified: Most frequent description)
+                const descriptions = validContracts.map(c => c.prime_award_base_transaction_description?.trim() || c.transaction_description?.trim()).filter(Boolean);
+                let dominantType = 'N/A';
+                if (descriptions.length > 0) {
+                    const descCounts = d3.rollup(descriptions, v => v.length, d => d);
+                    dominantType = d3.greatest(Array.from(descCounts.entries()), ([, count]) => count)?.[0] || 'N/A';
+                }
+
+                return {
+                    siName: primeName,
+                    numAwards: new Set(validContracts.map(c => c.prime_award_unique_key)).size, // Count unique keys
+                    avgValue: avgValue,
+                    avgDurationDays: Math.round(avgDurationDays),
+                    dominantType: dominantType
+                };
+            }).filter(Boolean) // Remove null entries
+              .sort((a, b) => b.numAwards - a.numAwards); // Sort by number of awards
+
+            console.log(`Processed ${leaderData.length} leaders.`);
+            return leaderData;
         }
-        function capitalizeFirstLetter(string) {
-            if (!string || typeof string !== 'string') return '';
-            return string.charAt(0).toUpperCase() + string.slice(1);
+
+        function displayContractLeadersTable(leaderData) {
+            const container = document.getElementById('contract-leaders-table-container');
+            setLoading('contract-leaders-table-container', false); // Hide loading
+
+            if (!leaderData || leaderData.length === 0) {
+                displayNoData('contract-leaders-table-container', 'No contract leader data found.');
+                return;
+            }
+
+            // Limit to top 10-15 for display
+            const displayData = leaderData.slice(0, 15);
+
+            let tableHTML = `
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col">SI Name</th>
+                            <th scope="col" class="number"># of Awards</th>
+                            <th scope="col" class="number">Avg Value</th>
+                            <th scope="col" class="number">Avg Duration (Days)</th>
+                            <th scope="col">Dominant Type</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+            `;
+
+            displayData.forEach(leader => {
+                tableHTML += `
+                    <tr>
+                        <td class="font-medium text-gray-900">${leader.siName}</td>
+                        <td class="number text-gray-600">${leader.numAwards.toLocaleString()}</td>
+                        <td class="number text-gray-600">${formatCurrency(leader.avgValue)}</td>
+                        <td class="number text-gray-600">${leader.avgDurationDays.toLocaleString()}</td>
+                        <td class="text-gray-600 text-xs" title="${leader.dominantType}">${truncateText(leader.dominantType, 40)}</td>
+                    </tr>
+                `;
+            });
+
+            tableHTML += `</tbody></table>`;
+            if (leaderData.length > 15) {
+                 tableHTML += `<p class="text-center text-sm text-gray-500 mt-4">Showing Top 15 of ${leaderData.length} leaders</p>`;
+             }
+            container.innerHTML = tableHTML;
         }
-        function truncateText(text, maxLength) {
+
+         function truncateText(text, maxLength) {
              if (!text) return '';
              return text.length > maxLength ? text.substring(0, maxLength - 3) + '...' : text;
+         }
+
+        // --- Chart 2: TAV vs TCV Tracker ---
+        let tavTcvChartInstance = null; // Store chart instance
+
+        function processTavTcvData(data) {
+             console.log("Processing TAV/TCV data...");
+             // Filter out rows without necessary values and sort by TCV descending
+             const contracts = data.filter(row => {
+                 const tcv = parseFloat(row.current_total_value_of_award || 0);
+                 const tav = parseFloat(row.total_dollars_obligated || 0);
+                 // Require a contract ID and positive TCV
+                 return (row.award_id_piid || row.contract_award_unique_key) && tcv > 0;
+             }).map(row => ({
+                 id: row.award_id_piid || row.contract_award_unique_key,
+                 primeName: row.prime_awardee_name || 'Unknown Prime',
+                 tcv: parseFloat(row.current_total_value_of_award || 0),
+                 tav: parseFloat(row.total_dollars_obligated || 0),
+                 potentialTcv: parseFloat(row.potential_total_value_of_award || row.base_and_all_options_value || 0) // Add potential value
+             })).sort((a, b) => b.tcv - a.tcv) // Sort by TCV descending
+               .slice(0, 5); // Take top 5
+
+             console.log(`Processed ${contracts.length} contracts for TAV/TCV chart.`);
+             return contracts;
+         }
+
+        function displayTavTcvChart(chartData) {
+            const containerId = 'tav-tcv-chart-container';
+            const canvas = document.getElementById('tavTcvChart');
+            setLoading(containerId, false); // Hide loading
+
+            if (!chartData || chartData.length === 0) {
+                displayNoData(containerId, 'No suitable contracts found for TAV/TCV comparison.');
+                if (tavTcvChartInstance) tavTcvChartInstance.destroy(); // Clear old chart
+                return;
+            }
+
+            const ctx = canvas.getContext('2d');
+
+            // Destroy previous chart instance if it exists
+            if (tavTcvChartInstance) {
+                tavTcvChartInstance.destroy();
+            }
+
+            const labels = chartData.map(d => `${truncateText(d.primeName, 15)} (${truncateText(d.id, 8)})`);
+            const tavData = chartData.map(d => d.tav);
+            const tcvData = chartData.map(d => d.tcv);
+            // Optional: Add potential TCV data
+            // const potentialTcvData = chartData.map(d => d.potentialTcv);
+
+            tavTcvChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'TAV (Obligated)',
+                            data: tavData,
+                            backgroundColor: 'rgba(54, 162, 235, 0.7)', // Blue
+                            borderColor: 'rgba(54, 162, 235, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'TCV (Current Total)',
+                            data: tcvData,
+                            backgroundColor: 'rgba(255, 99, 132, 0.7)', // Red
+                            borderColor: 'rgba(255, 99, 132, 1)',
+                            borderWidth: 1
+                        }
+                        // Optional: Add Potential TCV dataset
+                        // {
+                        //     label: 'Potential TCV',
+                        //     data: potentialTcvData,
+                        //     backgroundColor: 'rgba(75, 192, 192, 0.7)', // Green
+                        //     borderColor: 'rgba(75, 192, 192, 1)',
+                        //     borderWidth: 1
+                        // }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: 'y', // Use horizontal bars for better label readability
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            title: { display: true, text: 'Contract Value (USD)' },
+                            ticks: {
+                                callback: function(value) { return formatCurrency(value); } // Format ticks
+                            }
+                        },
+                        y: {
+                             ticks: {
+                                 autoSkip: false, // Show all labels
+                                 font: { size: 10 } // Smaller font for labels
+                             }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) { label += ': '; }
+                                    if (context.parsed.x !== null) {
+                                        label += formatCurrency(context.parsed.x);
+                                    }
+                                    return label;
+                                }
+                            }
+                        },
+                        legend: {
+                            position: 'bottom' // Move legend below
+                        }
+                    }
+                }
+            });
         }
-         function getNormalizedStateCode(row) { // Ensure this uses correct fields
-             const stateFields = [
-                 row.primary_place_of_performance_state_code,
-                 row.subaward_primary_place_of_performance_state_code, // Check subaward field too
-                 // Add other fallbacks if present in your merged file
-                 // row.place_of_performance_state,
-                 // row.pop_state,
-                 // row.prime_award_pop_state
-             ];
-             for (const field of stateFields) {
-                 if (field && typeof field === 'string' && field.trim() !== '' && field.trim().length === 2) {
-                     return field.toUpperCase().trim();
+
+
+        // --- Chart 3: ARR Estimator ---
+        function populateArrFilters(data) {
+            const agencySet = new Set();
+            const naicsMap = new Map(); // code -> desc
+
+            data.forEach(row => {
+                 const agency = row.awarding_agency_name?.trim() || row.funding_agency_name?.trim();
+                 if (agency) agencySet.add(agency);
+
+                 const code = row.naics_code?.toString().trim();
+                 const desc = row.naics_description?.trim() || 'No Description';
+                 if (code && !naicsMap.has(code)) {
+                     naicsMap.set(code, desc);
                  }
-             }
-             return null;
-         }
-         function getStateFullName(abbr) { /* ... keep from subhoo ... */
-            const stateNames = { 'AL': 'Alabama', 'AK': 'Alaska', 'AZ': 'Arizona', 'AR': 'Arkansas', 'CA': 'California', 'CO': 'Colorado', 'CT': 'Connecticut', 'DE': 'Delaware', 'FL': 'Florida', 'GA': 'Georgia', 'HI': 'Hawaii', 'ID': 'Idaho', 'IL': 'Illinois', 'IN': 'Indiana', 'IA': 'Iowa', 'KS': 'Kansas', 'KY': 'Kentucky', 'LA': 'Louisiana', 'ME': 'Maine', 'MD': 'Maryland', 'MA': 'Massachusetts', 'MI': 'Michigan', 'MN': 'Minnesota', 'MS': 'Mississippi', 'MO': 'Missouri', 'MT': 'Montana', 'NE': 'Nebraska', 'NV': 'Nevada','NH': 'New Hampshire', 'NJ': 'New Jersey', 'NM': 'New Mexico', 'NY': 'New York','NC': 'North Carolina', 'ND': 'North Dakota', 'OH': 'Ohio', 'OK': 'Oklahoma','OR': 'Oregon', 'PA': 'Pennsylvania', 'RI': 'Rhode Island', 'SC': 'South Carolina','SD': 'South Dakota', 'TN': 'Tennessee', 'TX': 'Texas', 'UT': 'Utah','VT': 'Vermont', 'VA': 'Virginia', 'WA': 'Washington', 'WV': 'West Virginia','WI': 'Wisconsin', 'WY': 'Wyoming', 'DC': 'District of Columbia','PR': 'Puerto Rico', 'VI': 'Virgin Islands', 'GU': 'Guam','AS': 'American Samoa', 'MP': 'Northern Mariana Islands'};
-            return stateNames[abbr] || abbr;
-         }
-         function showLoadingIndicator() { if(loadingDiv) loadingDiv.style.display = 'flex'; }
-         function hideLoadingIndicator() { if(loadingDiv) loadingDiv.style.display = 'none'; }
-         function showNotification(message, type = 'info') { /* ... keep from subhoo ... */
-             let c = document.getElementById('notification-container'); if (!c) { c = document.createElement('div'); c.id = 'notification-container'; Object.assign(c.style, { position: 'fixed', top: '10px', right: '10px', zIndex: '1000', maxWidth: '90vw' }); document.body.appendChild(c); } const n = document.createElement('div'); n.className = `notification ${type}`; n.innerHTML = `<div class="notification-content">${message}</div><button class="notification-close" aria-label="Dismiss">&times;</button>`; Object.assign(n.style, { backgroundColor: type === 'error' ? 'var(--md-sys-color-error-container)' : 'var(--md-sys-color-primary-container)', color: type === 'error' ? 'var(--md-sys-color-on-error-container)' : 'var(--md-sys-color-on-primary-container)', padding: '10px 16px', marginBottom: '10px', borderRadius: '8px', boxShadow: 'var(--md-sys-elevation-2)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', animation: 'notification-slide-in 0.3s ease forwards', opacity: '0', transform: 'translateX(20px)' }); const b = n.querySelector('.notification-close'); Object.assign(b.style, { background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', marginLeft: '10px', opacity: '0.7' }); const close = () => { n.style.animation = 'notification-slide-out 0.3s ease forwards'; setTimeout(() => n.remove(), 300); }; b.addEventListener('click', close); if (type !== 'error') { setTimeout(() => { if (n.parentNode) close(); }, 5000); } c.appendChild(n); setTimeout(() => { n.style.opacity = '1'; n.style.transform = 'translateX(0)'; }, 10); if (!document.getElementById('notification-keyframes')) { const s = document.createElement('style'); s.id = 'notification-keyframes'; s.textContent = `@keyframes notification-slide-in { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } } @keyframes notification-slide-out { from { opacity: 1; transform: translateX(0); } to { opacity: 0; transform: translateX(20px); } }`; document.head.appendChild(s); }
-         }
+            });
 
-        // --- Data Processing (Adapted from Sankey Viewer) ---
-        function processDataForSankey(data, topN) {
-            // ... (Keep the CORRECTED processDataForSankey function from the previous response) ...
-             console.log(`Processing ${data.length} raw rows for Sankey. Top N = ${topN}`);
-             const nodesMap = new Map(); // Stores ALL potential nodes initially {id -> nodeObject}
-             const primeToSubLinksRaw = []; // Store raw P->S links with hierarchy info
+            populateDropdown(document.getElementById('arr-agency-filter'), agencySet, "All Agencies");
+            populateNaicsDropdown(document.getElementById('arr-naics-filter'), naicsMap);
+        }
 
-             // --- Pass 1: Collect all potential nodes and raw P->S links ---
-             data.forEach(row => {
-                 const agencyName = row.prime_award_awarding_agency_name?.trim() || row.awarding_agency_name?.trim();
-                 const subAgencyName = row.prime_award_awarding_sub_agency_name?.trim() || row.awarding_sub_agency_name?.trim(); // Added
-                 const officeName = row.prime_award_awarding_office_name?.trim() || row.awarding_office_name?.trim(); // Added
-                 const primeName = row.prime_awardee_name?.trim() || row.recipient_name?.trim();
-                 const subName = row.subawardee_name?.trim();
-                 const value = parseFloat(String(row[valueField] || '0').replace(/[^0-9.-]+/g, '')) || 0;
+        function calculateAverageARR() {
+            const agencyFilter = document.getElementById('arr-agency-filter').value;
+            const naicsFilter = document.getElementById('arr-naics-filter').value;
+            const startDateFilter = parseDate(document.getElementById('arr-start-date').value);
+            const endDateFilter = parseDate(document.getElementById('arr-end-date').value);
+            const resultDiv = document.getElementById('arr-result');
+            const loadingDiv = document.getElementById('arr-loading');
+            const errorDiv = document.getElementById('arr-error');
+            const noDataDiv = document.getElementById('arr-no-data');
 
-                 // Skip if essential info is missing or value <= 0, MUST have a sub for this flow
-                 if (!agencyName || !subAgencyName || !officeName || !primeName || !subName || value <= 0) { // Added checks
-                     return;
-                 }
+            resultDiv.textContent = '--'; // Reset result
+            loadingDiv.style.display = 'block';
+            errorDiv.style.display = 'none';
+            noDataDiv.style.display = 'none';
 
-                 // Define node IDs
-                 const agencyId = `agency-${agencyName}`;
-                 const subAgencyId = `subagency-${subAgencyName}`; // Added
-                 const officeId = `office-${officeName}`; // Added
-                 const primeId = `prime-${primeName}`;
-                 const subId = `sub-${subName}`;
 
-                 // Add/Update nodes (value will be recalculated later)
-                 if (!nodesMap.has(agencyId)) nodesMap.set(agencyId, { id: agencyId, name: agencyName, type: 'agency', value: 0 });
-                 if (!nodesMap.has(subAgencyId)) nodesMap.set(subAgencyId, { id: subAgencyId, name: subAgencyName, type: 'subagency', value: 0 }); // Added
-                 if (!nodesMap.has(officeId)) nodesMap.set(officeId, { id: officeId, name: officeName, type: 'office', value: 0 }); // Added
-                 if (!nodesMap.has(primeId)) nodesMap.set(primeId, { id: primeId, name: primeName, type: 'prime', value: 0 });
-                 if (!nodesMap.has(subId)) nodesMap.set(subId, { id: subId, name: subName, type: 'sub', value: 0 });
+            console.log("Calculating ARR with filters:", { agencyFilter, naicsFilter, startDateFilter, endDateFilter });
 
-                 // Store raw P->S link with hierarchy IDs for filtering and aggregation
-                 primeToSubLinksRaw.push({
-                     agencyId, subAgencyId, officeId, primeId, subId, value // Added hierarchy IDs
-                 });
-             });
+            // Use setTimeout to allow UI update before potentially long calculation
+            setTimeout(() => {
+                try {
+                    const filteredData = rawData.filter(row => {
+                        const agency = row.awarding_agency_name?.trim() || row.funding_agency_name?.trim();
+                        const naics = row.naics_code?.toString().trim();
+                        const popStartDate = parseDate(row.period_of_performance_start_date);
+                        const popEndDate = parseDate(row.period_of_performance_current_end_date);
 
-             let finalNodes = [];
-             let finalLinks = [];
-             let relevantPrimeSubLinks = primeToSubLinksRaw; // Start with all valid P->S links
+                        // Apply filters
+                        if (agencyFilter && agency !== agencyFilter) return false;
+                        if (naicsFilter && naics !== naicsFilter) return false;
+                        // Date range filter (check if contract period overlaps with filter range)
+                        if (startDateFilter && popEndDate && popEndDate < startDateFilter) return false; // Contract ends before filter starts
+                        if (endDateFilter && popStartDate && popStartDate > endDateFilter) return false; // Contract starts after filter ends
 
-             // --- Apply Top N Filter (if applicable) ---
-             if (topN > 0 && primeToSubLinksRaw.length > 0) {
-                 console.log(`Applying Top ${topN} filter...`);
-                 primeToSubLinksRaw.sort((a, b) => b.value - a.value); // Sort descending by value
-                 relevantPrimeSubLinks = primeToSubLinksRaw.slice(0, topN); // Keep only top N raw links
-             }
+                        return true; // Include if passes all filters
+                    });
 
-             // --- Pass 2: Aggregate links and identify nodes based on relevant P->S links ---
-             const finalLinksMap = new Map(); // { 'sourceId|targetId' -> linkObject }
-             const finalNodesInFlow = new Set();
+                    console.log(`Filtered down to ${filteredData.length} contracts for ARR calculation.`);
 
-             relevantPrimeSubLinks.forEach(rawLink => {
-                 // Add nodes involved in this link to the final set
-                 finalNodesInFlow.add(rawLink.agencyId);
-                 finalNodesInFlow.add(rawLink.subAgencyId); // Added
-                 finalNodesInFlow.add(rawLink.officeId); // Added
-                 finalNodesInFlow.add(rawLink.primeId);
-                 finalNodesInFlow.add(rawLink.subId);
-
-                 // Aggregate link values for ALL levels
-                 const linksToUpdate = [
-                     { key: `${rawLink.agencyId}|${rawLink.subAgencyId}`, source: rawLink.agencyId, target: rawLink.subAgencyId, type: 'agencyToSub' }, // Added
-                     { key: `${rawLink.subAgencyId}|${rawLink.officeId}`, source: rawLink.subAgencyId, target: rawLink.officeId, type: 'subToOffice' }, // Added
-                     { key: `${rawLink.officeId}|${rawLink.primeId}`, source: rawLink.officeId, target: rawLink.primeId, type: 'officeToPrime' }, // Added
-                     { key: `${rawLink.primeId}|${rawLink.subId}`, source: rawLink.primeId, target: rawLink.subId, type: 'primeToSub' }
-                 ];
-
-                 linksToUpdate.forEach(linkInfo => {
-                     if (!finalLinksMap.has(linkInfo.key)) {
-                         finalLinksMap.set(linkInfo.key, {
-                             source: linkInfo.source,
-                             target: linkInfo.target,
-                             value: 0,
-                             type: linkInfo.type
-                         });
+                    if (filteredData.length === 0) {
+                         loadingDiv.style.display = 'none';
+                         noDataDiv.style.display = 'block';
+                         return;
                      }
-                     finalLinksMap.get(linkInfo.key).value += rawLink.value; // Aggregate value
-                 });
-             });
 
-             // Filter the initial nodesMap to keep only those involved in the flow
-             finalNodes = Array.from(nodesMap.values()).filter(node => finalNodesInFlow.has(node.id));
-             finalLinks = Array.from(finalLinksMap.values()).filter(link => link.value > 0); // Filter zero-value links
+                    let totalARR = 0;
+                    let validContractsCount = 0;
 
-             // --- Pass 3: Recalculate node values based on final links ---
-             finalNodes.forEach(node => node.value = 0); // Reset node values
-             finalLinks.forEach(link => {
-                 const sourceNode = finalNodes.find(n => n.id === link.source);
-                 const targetNode = finalNodes.find(n => n.id === link.target);
-                 // Sankey node value is the max of incoming or outgoing flow for accurate sizing
-                 const linkValue = link.value; // Value of the current link
-                 if (sourceNode) {
-                     const outgoingSum = d3.sum(finalLinks.filter(l => l.source === sourceNode.id), l => l.value);
-                     sourceNode.value = Math.max(sourceNode.value || 0, outgoingSum);
-                 }
-                  if (targetNode) {
-                     const incomingSum = d3.sum(finalLinks.filter(l => l.target === targetNode.id), l => l.value);
-                      targetNode.value = Math.max(targetNode.value || 0, incomingSum);
-                  }
-             });
+                    filteredData.forEach(row => {
+                        const value = parseFloat(row.current_total_value_of_award || row.base_and_exercised_options_value || 0);
+                        const durationDays = calculateDurationDays(row.period_of_performance_start_date, row.period_of_performance_current_end_date);
 
-             // Final cleanup: Remove nodes with zero value if any resulted from max calculation logic
-             finalNodes = finalNodes.filter(n => n.value > 0);
-             const finalNodeIds = new Set(finalNodes.map(n => n.id));
-             finalLinks = finalLinks.filter(l => finalNodeIds.has(l.source) && finalNodeIds.has(l.target));
+                        if (value > 0 && durationDays > 0) {
+                            const durationYears = durationDays / 365.25; // Account for leap years roughly
+                            const arr = value / durationYears;
+                            totalARR += arr;
+                            validContractsCount++;
+                        }
+                    });
 
-
-             console.log(`Processed data (Top N=${topN}): ${finalNodes.length} nodes, ${finalLinks.length} links.`);
-             return { nodes: finalNodes, links: finalLinks };
+                    if (validContractsCount > 0) {
+                        const averageARR = totalARR / validContractsCount;
+                        resultDiv.textContent = formatCurrency(averageARR) + " / year";
+                    } else {
+                         noDataDiv.style.display = 'block';
+                    }
+                } catch (error) {
+                     console.error("Error calculating ARR:", error);
+                     errorDiv.textContent = `Error calculating ARR: ${error.message}`;
+                     errorDiv.style.display = 'block';
+                 } finally {
+                    loadingDiv.style.display = 'none';
+                }
+            }, 50); // Short delay
         }
 
-        // --- Drawing Function (Handles Min Value Filter) ---
-        function drawSankeyDiagram(data, minValue) {
-             // ... (Keep the drawSankeyDiagram function from the previous response) ...
-             // It already handles the filtering and drawing correctly based on input data
-             chartDiv.html(''); // Clear previous
 
-             if (!data || !data.nodes || !data.links) { /* ... handle error ... */ return; }
-
-             // --- Apply Minimum Value Filter ---
-             console.log(`Filtering links with value >= ${formatCurrency(minValue, false)}`);
-             const valueFilteredLinks = data.links.filter(link => link.value >= minValue);
-
-             if (valueFilteredLinks.length === 0) { /* ... handle no links ... */
-                  chartDiv.html(`<div id="loading">No contract links found above ${formatCurrency(minValue, false)}. Try lowering the minimum value filter.</div>`);
-                  return;
-             }
-
-             // Identify nodes connected by the filtered links
-             const nodesConnected = new Set();
-             valueFilteredLinks.forEach(link => {
-                 nodesConnected.add(link.source);
-                 nodesConnected.add(link.target);
-             });
-             // Keep only nodes that are part of the filtered flow
-             const valueFilteredNodes = data.nodes.filter(node => nodesConnected.has(node.id));
-
-             if (valueFilteredNodes.length === 0) { /* ... handle no nodes ... */
-                  chartDiv.html(`<div id="loading">No nodes connected after filtering by value >= ${formatCurrency(minValue, false)}.</div>`);
-                  return;
-             }
-             // --- End Min Value Filter ---
+        // --- Initialization ---
+        async function initializeDashboard() {
+            console.log("Initializing dashboard...");
+            // Show loading for all charts initially
+            setLoading('contract-leaders-table-container', true);
+            setLoading('tav-tcv-chart-container', true);
+            document.getElementById('arr-result').textContent = '--';
 
 
-             const chartContainer = document.getElementById('chart');
-             const containerRect = chartContainer.getBoundingClientRect();
-             const width = containerRect.width;
-             const height = containerRect.height;
-             const margin = { top: 25, right: 25, bottom: 25, left: 25 };
-             const innerWidth = width - margin.left - margin.right;
-             const innerHeight = height - margin.top - margin.bottom;
+            try {
+                rawData = await d3.csv(DATA_URL);
+                console.log(`Loaded ${rawData.length} rows from ${DATA_URL}`);
 
-             if (innerWidth <= 10 || innerHeight <= 10) { /* ... handle small container ... */ return; }
+                if (!rawData || rawData.length === 0) {
+                    throw new Error("CSV file loaded, but it contains no data rows.");
+                }
 
-             const svg = chartDiv.append('svg')
-                 .attr('width', width)
-                 .attr('height', height)
-                 .append('g')
-                 .attr('transform', `translate(${margin.left},${margin.top})`);
+                 // --- Data Type Conversion (Crucial) ---
+                 rawData = rawData.map(row => {
+                     // Convert amounts (handle potential commas, $, etc.)
+                     row.current_total_value_of_award = parseFloat(String(row.current_total_value_of_award || '0').replace(/[^0-9.-]+/g,'')) || 0;
+                     row.base_and_exercised_options_value = parseFloat(String(row.base_and_exercised_options_value || '0').replace(/[^0-9.-]+/g,'')) || 0;
+                     row.total_dollars_obligated = parseFloat(String(row.total_dollars_obligated || '0').replace(/[^0-9.-]+/g,'')) || 0;
+                     row.base_and_all_options_value = parseFloat(String(row.base_and_all_options_value || '0').replace(/[^0-9.-]+/g,'')) || 0;
+                     row.potential_total_value_of_award = parseFloat(String(row.potential_total_value_of_award || '0').replace(/[^0-9.-]+/g,'')) || 0;
+                     row.subaward_amount = parseFloat(String(row.subaward_amount || '0').replace(/[^0-9.-]+/g,'')) || 0; // Needed if ARR uses it
 
-             const sankey = d3.sankey()
-                 .nodeId(d => d.id)
-                 .nodeWidth(20)
-                 .nodePadding(12) // Adjusted padding
-                 .nodeAlign(d3.sankeyJustify) // Or d3.sankeyLeft, etc.
-                 .extent([[0, 0], [innerWidth, innerHeight]]);
-
-             let graph;
-             try {
-                  const graphDataCopy = {
-                      nodes: valueFilteredNodes.map(d => ({...d})), // Use filtered nodes
-                      links: valueFilteredLinks.map(d => ({...d})) // Use filtered links
-                  };
-                  // Recalculate node values based *only* on the filtered links before layout
-                  graphDataCopy.nodes.forEach(node => node.value = 0); // Reset values
-                  graphDataCopy.links.forEach(link => {
-                      const sourceNode = graphDataCopy.nodes.find(n => n.id === link.source);
-                      const targetNode = graphDataCopy.nodes.find(n => n.id === link.target);
-                      // Use max of incoming/outgoing for node value in Sankey
-                      const linkValue = link.value;
-                      if (sourceNode) {
-                          const outgoingSum = d3.sum(graphDataCopy.links.filter(l => l.source === sourceNode.id), l => l.value);
-                          sourceNode.value = Math.max(sourceNode.value || 0, outgoingSum);
-                      }
-                      if (targetNode) {
-                          const incomingSum = d3.sum(graphDataCopy.links.filter(l => l.target === targetNode.id), l => l.value);
-                          targetNode.value = Math.max(targetNode.value || 0, incomingSum);
-                      }
-                  });
-                  // Remove nodes with zero value *after* recalculation based on filtered links
-                  graphDataCopy.nodes = graphDataCopy.nodes.filter(n => n.value > 0);
-                  const finalNodeIdsLayout = new Set(graphDataCopy.nodes.map(n => n.id));
-                  graphDataCopy.links = graphDataCopy.links.filter(l => finalNodeIdsLayout.has(l.source) && finalNodeIdsLayout.has(l.target));
-
-
-                 if(graphDataCopy.nodes.length === 0 || graphDataCopy.links.length === 0) {
-                      throw new Error("No nodes or links remain after final value recalculation.");
-                  }
-                 graph = sankey(graphDataCopy);
-             } catch (e) { /* ... handle layout error ... */
-                  console.error("Error calculating Sankey layout:", e);
-                  chartDiv.html(`<div id="loading">Layout Error: ${e.message}. Check filters.</div>`);
-                  return;
-              }
-
-             // --- Draw Links ---
-             const defs = svg.append("defs");
-             graph.links.forEach((link, i) => { /* ... gradient definition ... */
-                  const gradientId = `link-gradient-${i}`;
-                  const sourceColor = qbrColorScale(link.source.type) || '#ccc';
-                  const targetColor = qbrColorScale(link.target.type) || '#ccc';
-                  const gradient = defs.append("linearGradient")
-                      .attr("id", gradientId)
-                      .attr("gradientUnits", "userSpaceOnUse")
-                      .attr("x1", link.source.x1).attr("x2", link.target.x0);
-                  gradient.append("stop").attr("offset", "0%").attr("stop-color", sourceColor);
-                  gradient.append("stop").attr("offset", "100%").attr("stop-color", targetColor);
-                  link.gradientId = gradientId;
-              });
-
-             const link = svg.append("g").attr("class", "links").attr("fill", "none")
-                 .selectAll("path").data(graph.links).join("path")
-                 .attr("class", "link")
-                 .attr("d", d3.sankeyLinkHorizontal())
-                 .attr("stroke", d => `url(#${d.gradientId})`)
-                 .attr("stroke-width", d => Math.max(1.5, d.width))
-                 .style("stroke-opacity", 0.3) // Slightly lower opacity
-                 .sort((a, b) => b.width - a.width)
-                 .on("mouseover", function(event, d) { /* ... tooltip ... */
-                      d3.select(this).style("stroke-opacity", 0.6); // Adjusted hover opacity
-                      const sourceTypeName = d.source.type.charAt(0).toUpperCase() + d.source.type.slice(1);
-                      const targetTypeName = d.target.type.charAt(0).toUpperCase() + d.target.type.slice(1);
-                      const content = `<h4>${sourceTypeName} → ${targetTypeName}</h4><p>${d.source.name} → ${d.target.name}</p><p><strong>Value:</strong> ${formatCurrency(d.value)}</p>`;
-                      showTooltip(event, content);
-                   })
-                 .on("mouseout", function() { /* ... tooltip ... */
-                      d3.select(this).style("stroke-opacity", 0.3);
-                      hideTooltip();
-                   });
-
-             // --- Draw Nodes ---
-             const node = svg.append("g").attr("class", "nodes")
-                 .selectAll("g").data(graph.nodes).join("g")
-                 .attr("class", d => `node node-type-${d.type}`)
-                 .attr("transform", d => `translate(${d.x0},${d.y0})`);
-
-             node.append("rect")
-                 .attr("height", d => Math.max(1, d.y1 - d.y0))
-                 .attr("width", d => d.x1 - d.x0)
-                 .attr("fill", d => qbrColorScale(d.type)) // Use updated scale
-                 .attr("fill-opacity", 0.9)
-                 .on("mouseover", function(event, d) { /* ... tooltip ... */
-                      d3.select(this).attr("stroke", "#343a40").attr("stroke-width", 2);
-                      const content = `<h4>${d.name}</h4><p><strong>Type:</strong> ${d.type.charAt(0).toUpperCase() + d.type.slice(1)}</p><p><strong>Total Flow:</strong> ${formatCurrency(d.value)}</p>`;
-                      showTooltip(event, content);
-                  })
-                 .on("mouseout", function() { /* ... tooltip ... */
-                      d3.select(this).attr("stroke", "#ffffff").attr("stroke-width", 1);
-                      hideTooltip();
-                   });
-
-             // --- Add Node Labels ---
-             node.append("text")
-                 .attr("x", d => d.x0 < innerWidth / 2 ? 6 + (d.x1 - d.x0) : -6)
-                 .attr("y", d => (d.y1 - d.y0) / 2)
-                 .attr("dy", "0.35em")
-                 .attr("text-anchor", d => d.x0 < innerWidth / 2 ? "start" : "end")
-                 .text(d => d.name)
-                 .filter(d => (d.y1 - d.y0) > 10) // Adjust threshold if needed
-                 .clone(true).lower()
-                 .attr("stroke-linejoin", "round")
-                 .attr("stroke-width", 3)
-                 .attr("stroke", "#fff");
-
-             console.log("Sankey diagram drawn with filtered data.");
-        }
-
-        // --- Filter Initialization ---
-        function initializeFilters(data) { /* ... as before ... */
-             const values = data.map(row => parseFloat(String(row[valueField] || '0').replace(/[^0-9.-]+/g, '')) || 0)
-                              .filter(v => v > 0);
-             const minValue = 0;
-             const maxValue = d3.max(values) || 1000000;
-             const step = Math.max(10000, Math.ceil(maxValue / 100 / 10000) * 10000 || 10000);
-             minValueSlider.min = minValue;
-             minValueSlider.max = maxValue;
-             minValueSlider.step = step;
-             minValueSlider.value = currentMinValue;
-             minValueDisplay.textContent = formatCurrency(currentMinValue, true);
-             topNSelect.value = currentTopN;
-        }
-
-        // --- Update Chart Trigger ---
-        function updateChart() { /* ... as before ... */
-             console.log(`Updating chart. MinValue: ${currentMinValue}, TopN: ${currentTopN}`);
-             showLoadingIndicator(); // Use helper
-             chartDiv.html('');
-             const processed = processDataForSankey(rawData, currentTopN);
-             setTimeout(() => {
-                  drawSankeyDiagram(processed, currentMinValue);
-                  hideLoadingIndicator(); // Use helper
-             }, 50);
-        }
-
-        // --- Populate Filter Dropdowns (Example for Agency) ---
-        function populateFilterDropdowns() {
-            if (!rawData || rawData.length === 0) return;
-
-            const agencies = new Set(rawData.map(r => r.prime_award_awarding_agency_name?.trim() || r.awarding_agency_name?.trim()).filter(Boolean));
-            // ... populate agencySelector ...
-            populateDropdown(agencySelector, agencies);
-
-            // --- Populate other dropdowns similarly ---
-             const offices = new Set(rawData.map(r => r.prime_award_awarding_office_name?.trim() || r.awarding_office_name?.trim()).filter(Boolean));
-             populateDropdown(officeSelector, offices);
-
-             const primes = new Set(rawData.map(r => r.prime_awardee_name?.trim() || r.recipient_name?.trim()).filter(Boolean));
-             populateDropdown(primeSelector, primes);
-
-             const subs = new Set(rawData.map(r => r.subawardee_name?.trim()).filter(Boolean));
-             populateDropdown(subSelector, subs);
-
-             const naics = new Map(); // Use map for code -> desc
-             rawData.forEach(r => {
-                 const code = r.prime_award_naics_code?.toString().trim();
-                 const desc = r.prime_award_naics_description?.trim() || 'No Description';
-                 if (code && !naics.has(code)) {
-                     naics.set(code, desc);
-                 }
-             });
-             populateNaicsDropdown(naicsSelector, naics);
-
-            console.log("Filter dropdowns populated.");
-        }
-
-        function populateDropdown(selectElement, itemsSet, defaultOptionText = "All") {
-             if (!selectElement) return;
-             const currentValue = selectElement.value; // Preserve selection if possible
-             selectElement.innerHTML = `<option value="">${defaultOptionText}</option>`; // Reset
-             const sortedItems = Array.from(itemsSet).sort((a, b) => a.localeCompare(b));
-             sortedItems.forEach(item => {
-                 const option = document.createElement('option');
-                 option.value = item;
-                 option.textContent = truncateText(item, 50); // Truncate long names
-                 option.title = item; // Show full name on hover
-                 selectElement.appendChild(option);
-             });
-             if (sortedItems.includes(currentValue)) {
-                 selectElement.value = currentValue; // Restore selection
-             }
-         }
-
-         function populateNaicsDropdown(selectElement, naicsMap) {
-             if (!selectElement) return;
-             const currentValue = selectElement.value;
-             selectElement.innerHTML = `<option value="">All NAICS</option>`;
-             const sortedCodes = Array.from(naicsMap.keys()).sort();
-             sortedCodes.forEach(code => {
-                 const desc = naicsMap.get(code);
-                 const option = document.createElement('option');
-                 option.value = code;
-                 option.textContent = `${code} - ${truncateText(desc, 40)}`;
-                 option.title = `${code} - ${desc}`;
-                 selectElement.appendChild(option);
-             });
-             if (sortedCodes.includes(currentValue)) {
-                 selectElement.value = currentValue;
-             }
-         }
-
-
-        // --- Event Listeners ---
-        minValueSlider.addEventListener('input', () => { /* ... as before ... */
-             const value = parseInt(minValueSlider.value);
-             minValueDisplay.textContent = formatCurrency(value, true);
-             clearTimeout(minValueDebounceTimer);
-             minValueDebounceTimer = setTimeout(() => {
-                 currentMinValue = value;
-                 updateChart(); // Trigger update
-             }, 250);
-        });
-        topNSelect.addEventListener('change', () => { /* ... as before ... */
-             currentTopN = parseInt(topNSelect.value);
-             updateChart(); // Trigger update
-        });
-        window.addEventListener('resize', () => { /* ... as before ... */
-             clearTimeout(resizeTimer);
-             resizeTimer = setTimeout(updateChart, 300);
-         });
-
-         // Add listeners for new filters
-         agencySelector.addEventListener('change', () => { currentAgencyFilter = agencySelector.value; updateChart(); });
-         officeSelector.addEventListener('change', () => { currentOfficeFilter = officeSelector.value; updateChart(); });
-         primeSelector.addEventListener('change', () => { currentPrimeFilter = primeSelector.value; updateChart(); });
-         subSelector.addEventListener('change', () => { currentSubFilter = subSelector.value; updateChart(); });
-         naicsSelector.addEventListener('change', () => { currentNaicsFilter = naicsSelector.value; updateChart(); });
-         searchInput.addEventListener('input', () => {
-            clearTimeout(searchDebounceTimeout);
-            searchDebounceTimeout = setTimeout(() => {
-                currentSearchTerm = searchInput.value.trim().toLowerCase();
-                updateChart();
-            }, 350);
-         });
-         levelButtons.forEach(button => {
-             button.addEventListener('click', (event) => {
-                 const level = event.currentTarget.getAttribute('data-level');
-                 const isActive = event.currentTarget.classList.toggle('active');
-                 if (isActive) activeLevels.push(level);
-                 else activeLevels = activeLevels.filter(l => l !== level);
-                 activeLevels.sort((a, b) => ['agency', 'subagency', 'office', 'prime', 'sub'].indexOf(a) - ['agency', 'subagency', 'office', 'prime', 'sub'].indexOf(b));
-                 event.currentTarget.setAttribute('aria-pressed', isActive ? 'true' : 'false');
-                 // Note: Filtering by activeLevels needs to be implemented in processData or drawSankey
-                 console.warn("Filtering by Node Level not fully implemented yet in this combined example.");
-                 updateChart();
-             });
-         });
-         resetButton.addEventListener('click', () => {
-             // Reset filter variables
-             currentMinValue = 0;
-             currentTopN = 0;
-             currentAgencyFilter = '';
-             currentOfficeFilter = '';
-             currentPrimeFilter = '';
-             currentSubFilter = '';
-             currentNaicsFilter = '';
-             currentSearchTerm = '';
-             activeLevels = ['agency', 'subagency', 'office', 'prime', 'sub'];
-
-             // Reset UI elements
-             minValueSlider.value = currentMinValue;
-             minValueDisplay.textContent = formatCurrency(currentMinValue, true);
-             topNSelect.value = currentTopN;
-             agencySelector.value = '';
-             officeSelector.value = '';
-             primeSelector.value = '';
-             subSelector.value = '';
-             naicsSelector.value = '';
-             searchInput.value = '';
-             levelButtons.forEach(btn => btn.classList.add('active')); // Reset levels to all active
-
-             updateChart(); // Update chart with reset filters
-             showNotification('Filters reset.', 'info');
-         });
-
-         // Add Theme Toggle Listener (Simplified)
-          const themeToggle = document.getElementById('theme-toggle');
-          if (themeToggle) {
-              themeToggle.addEventListener('click', () => {
-                  document.body.classList.toggle('light-mode');
-                  // Add logic to update icon if needed
-              });
-          }
-
-
-        // --- Load Data and Initialize ---
-        d3.csv(dataUrl)
-            .then(loadedData => {
-                 if (!loadedData || loadedData.length === 0) {
-                     throw new Error("CSV file loaded, but contains no data.");
-                 }
-                  // --- Data Type Conversion (Important!) ---
-                 rawData = loadedData.map(row => {
-                     row.subaward_amount = parseFloat(String(row.subaward_amount || '0').replace(/[^0-9.-]+/g, '')) || 0;
-                     // Add other necessary conversions here
+                     // Dates remain strings for now, parsed in specific functions
                      return row;
                  });
 
-                 initializeFilters(rawData); // Set up filter ranges/defaults
-                 populateFilterDropdowns(); // Populate dropdowns
-                 updateChart(); // Initial chart draw
-             })
-            .catch(error => {
-                 console.error("Error loading or processing data:", error);
-                 loadingDiv.innerHTML = `Error: ${error.message}`;
-                 loadingDiv.style.color = 'red';
-             });
+
+                // Process and display charts
+                const leaderData = processContractLeaders(rawData);
+                displayContractLeadersTable(leaderData);
+
+                const tavTcvData = processTavTcvData(rawData);
+                displayTavTcvChart(tavTcvData);
+
+                // Populate ARR filters
+                populateArrFilters(rawData);
+
+            } catch (error) {
+                console.error("Initialization failed:", error);
+                displayError('contract-leaders-table-container', `Error loading data: ${error.message}`);
+                displayError('tav-tcv-chart-container', `Error loading data: ${error.message}`);
+                displayError('arr-result', `Error loading data: ${error.message}`); // Show error for ARR too
+            }
+        }
+
+        // --- Event Listeners ---
+        document.getElementById('arr-calculate-button').addEventListener('click', calculateAverageARR);
+
+        // --- Run Initialization ---
+        document.addEventListener('DOMContentLoaded', initializeDashboard);
 
     </script>
-
 </body>
 </html>

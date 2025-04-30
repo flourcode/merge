@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QBR Sales Performance Charts</title>
+    <title>QBR Sales Performance Charts (USCC Primes)</title> {/* Updated Title */}
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
@@ -112,12 +112,12 @@
 </head>
 <body class="bg-gray-100 p-6 md:p-10">
 
-    <h1 class="text-3xl font-bold text-center text-gray-800 mb-10">Sales QBR Dashboard</h1>
+    <h1 class="text-3xl font-bold text-center text-gray-800 mb-10">Sales QBR Dashboard (USCC Primes)</h1>
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
 
         <div class="bg-white p-6 rounded-lg shadow-md">
-            <h2 class="text-xl font-semibold text-gray-700 mb-4">Contract Type Leaders (by Prime)</h2>
+            <h2 class="text-xl font-semibold text-gray-700 mb-4">Contract Leaders (by Prime Recipient)</h2> {/* Updated */}
             <div id="contract-leaders-table-container" class="chart-container">
                 <div class="loading-placeholder">
                     <div class="spinner"></div>
@@ -181,7 +181,7 @@
 
 
     <script>
-        const DATA_URL = 'uscc_primes.csv';
+        const DATA_URL = 'uscc_primes.csv'; // *** UPDATED DATA SOURCE ***
         let rawData = []; // To store loaded data
 
         // --- Utility Functions ---
@@ -194,9 +194,8 @@
             if (!dateString || typeof dateString !== 'string') return null;
             try {
                 if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
-                    return new Date(dateString + 'T00:00:00'); // Add time to avoid TZ issues
+                    return new Date(dateString + 'T00:00:00');
                 }
-                // Fallback using date-fns or native Date
                 const date = typeof dateFns !== 'undefined' ? dateFns.parseISO(dateString) : new Date(dateString);
                 return isNaN(date.getTime()) ? null : date;
             } catch (e) {
@@ -210,13 +209,11 @@
             const start = parseDate(startDateStr);
             const end = parseDate(endDateStr);
             if (!start || !end || end < start) return 0;
-             // Use date-fns if available for better accuracy
              if (typeof dateFns !== 'undefined') {
-                 return dateFns.differenceInDays(end, start) + 1; // Inclusive
+                 return dateFns.differenceInDays(end, start) + 1;
              } else {
-                 // Basic calculation as fallback
                  const diffTime = Math.abs(end - start);
-                 const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // Inclusive
+                 const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
                  return diffDays;
              }
         }
@@ -226,7 +223,6 @@
              if (!container) return;
              let placeholder = container.querySelector('.loading-placeholder');
              if (isLoading) {
-                 // Clear other placeholders first
                  container.querySelectorAll('.error-placeholder, .no-data-placeholder').forEach(el => el.style.display = 'none');
                  if (!placeholder) {
                      placeholder = document.createElement('div');
@@ -245,12 +241,12 @@
          function displayError(containerId, message) {
              const container = document.getElementById(containerId);
              if (!container) return;
-             setLoading(containerId, false); // Hide loading
-             container.querySelectorAll('.no-data-placeholder').forEach(el => el.style.display = 'none'); // Hide no-data
+             setLoading(containerId, false);
+             container.querySelectorAll('.no-data-placeholder').forEach(el => el.style.display = 'none');
              let errorPlaceholder = container.querySelector('.error-placeholder');
               if (!errorPlaceholder) {
                      errorPlaceholder = document.createElement('div');
-                     errorPlaceholder.className = 'error-placeholder text-red-600'; // Add Tailwind color
+                     errorPlaceholder.className = 'error-placeholder text-red-600';
                      container.appendChild(errorPlaceholder);
                  }
              errorPlaceholder.textContent = message;
@@ -260,8 +256,8 @@
          function displayNoData(containerId, message = "No data available for this view.") {
              const container = document.getElementById(containerId);
              if (!container) return;
-             setLoading(containerId, false); // Hide loading
-             container.querySelectorAll('.error-placeholder').forEach(el => el.style.display = 'none'); // Hide error
+             setLoading(containerId, false);
+             container.querySelectorAll('.error-placeholder').forEach(el => el.style.display = 'none');
              let noDataPlaceholder = container.querySelector('.no-data-placeholder');
              if (!noDataPlaceholder) {
                  noDataPlaceholder = document.createElement('div');
@@ -274,34 +270,30 @@
 
          function truncateText(text, maxLength) {
              if (!text) return '';
-             // Ensure text is a string before checking length
              const stringText = String(text);
              return stringText.length > maxLength ? stringText.substring(0, maxLength - 3) + '...' : stringText;
          }
 
-         // *** ADDED: Helper function to populate generic dropdowns ***
          function populateDropdown(selectElement, itemsSet, defaultOptionText = "All") {
              if (!selectElement) {
                  console.warn("populateDropdown: Provided selectElement is null or undefined.");
                  return;
              }
-             const currentValue = selectElement.value; // Preserve selection if possible
-             selectElement.innerHTML = `<option value="">${defaultOptionText}</option>`; // Reset with default
-             const sortedItems = Array.from(itemsSet).sort((a, b) => String(a).localeCompare(String(b))); // Ensure sorting as strings
+             const currentValue = selectElement.value;
+             selectElement.innerHTML = `<option value="">${defaultOptionText}</option>`;
+             const sortedItems = Array.from(itemsSet).sort((a, b) => String(a).localeCompare(String(b)));
              sortedItems.forEach(item => {
                  const option = document.createElement('option');
                  option.value = item;
-                 option.textContent = truncateText(item, 50); // Truncate long names
-                 option.title = item; // Show full name on hover
+                 option.textContent = truncateText(item, 50);
+                 option.title = item;
                  selectElement.appendChild(option);
              });
-             // Restore selection if the previous value still exists in the new list
              if (sortedItems.includes(currentValue)) {
                  selectElement.value = currentValue;
              }
          }
 
-         // *** ADDED: Helper function to populate NAICS dropdown ***
          function populateNaicsDropdown(selectElement, naicsMap) {
              if (!selectElement) {
                   console.warn("populateNaicsDropdown: Provided selectElement is null or undefined.");
@@ -329,28 +321,29 @@
             console.log("Processing Contract Leaders data...");
             if (!data || data.length === 0) return [];
 
-            const leaders = d3.group(data, d => d.prime_awardee_name);
+            // *** Use 'recipient_name' for prime name ***
+            const leaders = d3.group(data, d => d.recipient_name);
 
             const leaderData = Array.from(leaders, ([primeName, contracts]) => {
-                if (!primeName || primeName.toLowerCase() === 'unknown prime contractor') return null;
+                if (!primeName || primeName.toLowerCase() === 'unknown recipient') return null;
 
-                // Use prime_award_unique_key for uniqueness, fallback if needed
-                const uniqueContractKeys = new Set(contracts.map(c => c.prime_award_unique_key || c.award_id_piid || c.contract_award_unique_key).filter(Boolean));
-                if (uniqueContractKeys.size === 0) return null; // Need at least one identifiable contract
+                 // *** Use 'contract_award_unique_key' or 'award_id_piid' for unique awards ***
+                const uniqueContractKeys = new Set(contracts.map(c => c.contract_award_unique_key || c.award_id_piid).filter(Boolean));
+                if (uniqueContractKeys.size === 0) return null;
 
-                // Filter contracts associated with these unique keys for calculations
-                 const validContracts = contracts.filter(c => uniqueContractKeys.has(c.prime_award_unique_key || c.award_id_piid || c.contract_award_unique_key));
+                const validContracts = contracts.filter(c => uniqueContractKeys.has(c.contract_award_unique_key || c.award_id_piid));
 
-
-                // Calculate Avg Value using current_total_value_of_award primarily
-                const values = validContracts.map(c => c.current_total_value_of_award).filter(v => v !== null && v !== undefined && !isNaN(v));
+                // *** Use 'current_total_value_of_award' or 'base_and_exercised_options_value' ***
+                // Use ?? to provide fallback if the first field is null/undefined
+                const values = validContracts.map(c => c.current_total_value_of_award ?? c.base_and_exercised_options_value ?? 0).filter(v => !isNaN(v));
                 const avgValue = values.length > 0 ? d3.mean(values) : 0;
 
-                // Calculate Avg Duration
-                const durations = validContracts.map(c => calculateDurationDays(c.prime_award_period_of_performance_start_date, c.prime_award_period_of_performance_current_end_date)).filter(d => d > 0);
+                // *** Use correct date fields ***
+                const durations = validContracts.map(c => calculateDurationDays(c.period_of_performance_start_date, c.period_of_performance_current_end_date)).filter(d => d > 0);
                 const avgDurationDays = durations.length > 0 ? d3.mean(durations) : 0;
 
-                // Infer Dominant Type
+                // *** Use correct description fields ***
+                // Check for prime_award_base_transaction_description first if it exists, then transaction_description
                 const descriptions = validContracts.map(c => c.prime_award_base_transaction_description?.trim() || c.transaction_description?.trim()).filter(Boolean);
                 let dominantType = 'N/A';
                 if (descriptions.length > 0) {
@@ -365,8 +358,8 @@
                     avgDurationDays: Math.round(avgDurationDays),
                     dominantType: dominantType
                 };
-            }).filter(Boolean)
-              .sort((a, b) => b.numAwards - a.numAwards);
+            }).filter(Boolean) // Remove null entries (e.g., if primeName was missing)
+              .sort((a, b) => b.numAwards - a.numAwards); // Sort by number of awards
 
             console.log(`Processed ${leaderData.length} leaders.`);
             return leaderData;
@@ -382,13 +375,13 @@
                 return;
             }
 
-            const displayData = leaderData.slice(0, 15); // Limit display
+            const displayData = leaderData.slice(0, 15);
 
             let tableHTML = `
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>
-                            <th scope="col">SI Name</th>
+                            <th scope="col">Recipient Name</th> {/* Updated Header */}
                             <th scope="col" class="number"># Awards</th>
                             <th scope="col" class="number">Avg Value</th>
                             <th scope="col" class="number">Avg Duration (Days)</th>
@@ -426,17 +419,21 @@
              if (!data || data.length === 0) return [];
 
              const contracts = data.filter(row => {
-                 const tcv = row.current_total_value_of_award; // Already parsed number
+                 const tcv = row.current_total_value_of_award; // Use already parsed number
+                 // *** Use 'award_id_piid' or 'contract_award_unique_key' ***
                  const contractId = row.award_id_piid || row.contract_award_unique_key;
-                 return contractId && tcv > 0; // Must have ID and positive TCV
+                 return contractId && tcv > 0;
              }).map(row => ({
                  id: row.award_id_piid || row.contract_award_unique_key,
-                 primeName: row.prime_awardee_name || 'Unknown Prime',
+                 // *** Use 'recipient_name' ***
+                 primeName: row.recipient_name || 'Unknown Prime',
                  tcv: row.current_total_value_of_award,
-                 tav: row.total_dollars_obligated, // Already parsed number
-                 potentialTcv: row.potential_total_value_of_award || row.base_and_all_options_value // Already parsed
+                 // *** Use 'total_dollars_obligated' ***
+                 tav: row.total_dollars_obligated, // Use already parsed number
+                 // *** Use 'potential_total_value_of_award' or 'base_and_all_options_value' ***
+                 potentialTcv: row.potential_total_value_of_award ?? row.base_and_all_options_value ?? 0 // Use already parsed number
              })).sort((a, b) => b.tcv - a.tcv)
-               .slice(0, 5); // Top 5 by TCV
+               .slice(0, 5);
 
              console.log(`Processed ${contracts.length} contracts for TAV/TCV chart.`);
              return contracts;
@@ -468,20 +465,20 @@
                         {
                             label: 'TAV (Obligated)',
                             data: tavData,
-                            backgroundColor: 'rgba(54, 162, 235, 0.7)', // Blue
+                            backgroundColor: 'rgba(54, 162, 235, 0.7)',
                             borderColor: 'rgba(54, 162, 235, 1)',
                             borderWidth: 1
                         },
                         {
                             label: 'TCV (Current Total)',
                             data: tcvData,
-                            backgroundColor: 'rgba(255, 99, 132, 0.7)', // Red
+                            backgroundColor: 'rgba(255, 99, 132, 0.7)',
                             borderColor: 'rgba(255, 99, 132, 1)',
                             borderWidth: 1
                         }
                     ]
                 },
-                options: {
+                options: { /* ... options remain the same ... */
                     responsive: true,
                     maintainAspectRatio: false,
                     indexAxis: 'y',
@@ -506,7 +503,7 @@
                         },
                         legend: { position: 'bottom' }
                     }
-                }
+                 }
             });
         }
 
@@ -518,18 +515,20 @@
              const naicsMap = new Map();
 
              data.forEach(row => {
-                  const agency = row.awarding_agency_name?.trim() || row.funding_agency_name?.trim(); // Use correct field names
+                  // *** Use 'awarding_agency_name' or 'funding_agency_name' ***
+                  const agency = row.awarding_agency_name?.trim() || row.funding_agency_name?.trim();
                   if (agency) agencySet.add(agency);
 
-                  const code = row.prime_award_naics_code?.toString().trim(); // Use correct field name
-                  const desc = row.prime_award_naics_description?.trim() || 'No Description'; // Use correct field name
-                  if (code && !naicsMap.has(code)) {
+                  // *** Use 'naics_code' and 'naics_description' ***
+                  const code = row.naics_code?.toString().trim();
+                  const desc = row.naics_description?.trim() || 'No Description';
+                  if (code && code !== 'null' && code !== 'undefined' && !naicsMap.has(code)) { // Added checks for invalid codes
                       naicsMap.set(code, desc);
                   }
              });
 
              populateDropdown(document.getElementById('arr-agency-filter'), agencySet, "All Agencies");
-             populateNaicsDropdown(document.getElementById('arr-naics-filter'), naicsMap); // Use helper
+             populateNaicsDropdown(document.getElementById('arr-naics-filter'), naicsMap);
          }
 
         function calculateAverageARR() {
@@ -553,10 +552,11 @@
             setTimeout(() => {
                 try {
                     const filteredData = rawData.filter(row => {
-                        const agency = row.awarding_agency_name?.trim() || row.funding_agency_name?.trim(); // Use correct field names
-                        const naics = row.prime_award_naics_code?.toString().trim(); // Use correct field name
-                        const popStartDate = parseDate(row.prime_award_period_of_performance_start_date); // Use correct field names
-                        const popEndDate = parseDate(row.prime_award_period_of_performance_current_end_date); // Use correct field names
+                        // *** Use correct fields for filtering ***
+                        const agency = row.awarding_agency_name?.trim() || row.funding_agency_name?.trim();
+                        const naics = row.naics_code?.toString().trim();
+                        const popStartDate = parseDate(row.period_of_performance_start_date);
+                        const popEndDate = parseDate(row.period_of_performance_current_end_date);
 
                         if (agencyFilter && agency !== agencyFilter) return false;
                         if (naicsFilter && naics !== naicsFilter) return false;
@@ -578,9 +578,9 @@
                     let validContractsCount = 0;
 
                     filteredData.forEach(row => {
-                        // Use correct fields for ARR value calculation
-                        const value = row.current_total_value_of_award || row.base_and_exercised_options_value || 0; // Already parsed number
-                        const durationDays = calculateDurationDays(row.prime_award_period_of_performance_start_date, row.prime_award_period_of_performance_current_end_date); // Use correct fields
+                        // *** Use correct fields for ARR value and duration ***
+                        const value = row.current_total_value_of_award ?? row.base_and_exercised_options_value ?? 0; // Already parsed
+                        const durationDays = calculateDurationDays(row.period_of_performance_start_date, row.period_of_performance_current_end_date);
 
                         if (value > 0 && durationDays > 0) {
                             const durationYears = durationDays / 365.25;
@@ -612,7 +612,7 @@
             console.log("Initializing dashboard...");
             setLoading('contract-leaders-table-container', true);
             setLoading('tav-tcv-chart-container', true);
-            document.getElementById('arr-result').textContent = '--'; // Reset ARR display
+            document.getElementById('arr-result').textContent = '--';
 
             try {
                 rawData = await d3.csv(DATA_URL);
@@ -622,15 +622,16 @@
                     throw new Error("CSV file loaded, but it contains no data rows.");
                 }
 
-                 // --- Data Type Conversion (Crucial) ---
+                 // --- Data Type Conversion (Adjusted for Prime Data Fields) ---
                  rawData = rawData.map(row => {
-                     // Convert amounts (handle potential commas, $, etc.)
+                     // Convert amounts using the correct field names from your list
                      row.current_total_value_of_award = parseFloat(String(row.current_total_value_of_award || '0').replace(/[^0-9.-]+/g,'')) || 0;
                      row.base_and_exercised_options_value = parseFloat(String(row.base_and_exercised_options_value || '0').replace(/[^0-9.-]+/g,'')) || 0;
                      row.total_dollars_obligated = parseFloat(String(row.total_dollars_obligated || '0').replace(/[^0-9.-]+/g,'')) || 0;
                      row.base_and_all_options_value = parseFloat(String(row.base_and_all_options_value || '0').replace(/[^0-9.-]+/g,'')) || 0;
                      row.potential_total_value_of_award = parseFloat(String(row.potential_total_value_of_award || '0').replace(/[^0-9.-]+/g,'')) || 0;
-                     row.subaward_amount = parseFloat(String(row.subaward_amount || '0').replace(/[^0-9.-]+/g,'')) || 0;
+                     // 'subaward_amount' might not exist in prime data, handle gracefully
+                     row.subaward_amount = 0; // Default to 0 if not present
 
                      // Dates remain strings for now, parsed in specific functions
                      return row;
@@ -649,17 +650,15 @@
 
             } catch (error) {
                 console.error("Initialization failed:", error);
-                displayError('contract-leaders-table-container', `Error loading data: ${error.message}`);
-                displayError('tav-tcv-chart-container', `Error loading data: ${error.message}`);
+                displayError('contract-leaders-table-container', `Error loading/processing data: ${error.message}`);
+                displayError('tav-tcv-chart-container', `Error loading/processing data: ${error.message}`);
                 const arrErrorDiv = document.getElementById('arr-error');
                 if(arrErrorDiv) {
-                    arrErrorDiv.textContent = `Error loading data: ${error.message}`;
+                    arrErrorDiv.textContent = `Error loading/processing data: ${error.message}`;
                     arrErrorDiv.style.display = 'block';
                 }
-                 // Hide loading placeholders on error
-                setLoading('contract-leaders-table-container', false);
-                setLoading('tav-tcv-chart-container', false);
-
+                 setLoading('contract-leaders-table-container', false);
+                 setLoading('tav-tcv-chart-container', false);
             }
         }
 
